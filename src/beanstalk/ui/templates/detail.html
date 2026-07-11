@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ application.cafe.name }} — Beanstalk{% endblock %}
+{% block content %}
+<h2>{{ application.cafe.name }}</h2>
+<p>
+  {{ application.equipment.description }} —
+  financing ${{ application.financed_amount }} over {{ application.term_months }} months
+  (${{ decision.monthly_payment }}/mo)
+</p>
+<p>
+  Outcome: <strong class="outcome-{{ decision.outcome.value }}">{{ decision.outcome.value }}</strong>
+  · risk {{ "%.0f%%" | format(decision.risk_score * 100) }}
+</p>
+
+{% if decision.reasons %}
+<h3>Reasons</h3>
+<ul>
+  {% for reason in decision.reasons %}
+  <li><code>{{ reason.code }}</code> — {{ reason.message }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if decision.outcome.value == "needs_review" %}
+<h3>Resolve</h3>
+<form class="review" method="post" action="/applications/{{ application.application_id }}/review">
+  <input type="text" name="note" placeholder="Reviewer note (optional)">
+  <button name="verdict" value="approve">Approve</button>
+  <button name="verdict" value="decline">Decline</button>
+</form>
+{% endif %}
+<p><a href="/">← back to queue</a></p>
+{% endblock %}

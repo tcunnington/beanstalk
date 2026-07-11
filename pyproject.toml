@@ -1,0 +1,169 @@
+[project]
+name = "beanstalk"
+version = "0.1.0"
+description = "Equipment financing for indie coffee shops — an architecture-practice example project"
+readme = "README.md"
+authors = [
+    { name = "tcunnington", email = "taylor.cunnington@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.139.0",
+    "jinja2>=3.1.6",
+    "joblib>=1.5.3",
+    "numpy>=2.5.1",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.14.2",
+    "python-multipart>=0.0.32",
+    "scikit-learn>=1.9.0",
+    "uvicorn>=0.51.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.28,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "complexipy>=6.0.1",
+    "deptry>=0.25.1",
+    "httpx>=0.28.1",
+    "import-linter>=2.13",
+    "pre-commit>=4.6.0",
+    "pyright>=1.1.411",
+    "pytest>=9.1.1",
+    "ruff>=0.15.21",
+    "ty>=0.0.58",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff: lint + format. The PL (pylint) rules machine-enforce the guide's
+# function-structure limits (docs/design-rules.md Part 3.2).
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "PL"]
+
+[tool.ruff.lint.pylint]
+max-positional-args = 3  # guide: <= 2 mandatory positional (+ self); cluster the rest in a dataclass
+max-args = 6             # keyword-only config args are fine (guide: "The Python Exception")
+max-statements = 60      # backs the guide's 100-120 line function ceiling
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR2004"]  # magic values in assertions are fine
+
+# ---------------------------------------------------------------------------
+# Pyright: the type-checking gate. Strict on the pure tiers (utils/domain),
+# standard elsewhere. `ty` also runs in `just check` as a non-blocking
+# comparison — see justfile.
+# ---------------------------------------------------------------------------
+[tool.pyright]
+include = ["src", "tests"]
+typeCheckingMode = "standard"
+strict = ["src/beanstalk/utils", "src/beanstalk/domain"]
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+# ---------------------------------------------------------------------------
+# import-linter: the architecture contracts. Three composed contracts; each
+# must pass independently. See src/beanstalk/README.md for the rationale.
+# ---------------------------------------------------------------------------
+[tool.importlinter]
+root_package = "beanstalk"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layers: (api | ui) -> services -> model -> domain -> utils"
+type = "layers"
+layers = [
+    "beanstalk.api | beanstalk.ui",
+    "beanstalk.services",
+    "beanstalk.model",
+    "beanstalk.domain",
+    "beanstalk.utils",
+]
+
+[[tool.importlinter.contracts]]
+name = "Vertical modules (api, ui, model) are independent"
+type = "independence"
+modules = [
+    "beanstalk.api",
+    "beanstalk.ui",
+    "beanstalk.model",
+]
+# Independence also catches transitive chains, and api/ui legitimately reach
+# the model THROUGH services (that seam is the design). Ignoring the
+# services -> model edges leaves exactly the rule we want: no direct imports.
+ignore_imports = [
+    "beanstalk.services.** -> beanstalk.model.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "Tiers 1-2 (utils, domain) stay framework-free"
+type = "forbidden"
+source_modules = [
+    "beanstalk.utils",
+    "beanstalk.domain",
+]
+forbidden_modules = [
+    "pydantic",
+    "pydantic_settings",
+    "fastapi",
+    "sklearn",
+    "sqlite3",
+    "httpx",
+]
+
+# ---------------------------------------------------------------------------
+# archcheck: config for the custom AST checkers in tests/arch/checkers.
+# ---------------------------------------------------------------------------
+[tool.archcheck]
+source_root = "src/beanstalk"
+
+[tool.archcheck.no_inheritance]
+# Bases every class may inherit from. abc.ABC is deliberately absent:
+# house style is Protocols over ABCs (docs/design-rules.md Part 2, Tier 3).
+allowed_bases = [
+    "Exception",
+    "typing.Protocol",
+    "typing.Generic",
+    "pydantic.BaseModel",
+    "pydantic_settings.BaseSettings",
+    "typing.NamedTuple",
+    "typing.TypedDict",
+    "enum.Enum",
+    "enum.StrEnum",
+    "enum.IntEnum",
+]
+# A base whose name ends in Error/Exception is allowed (custom exception trees).
+allow_exception_suffix = true
+
+[tool.archcheck.model_logic]
+# Anemic data models: methods beyond derived properties/formatting are flagged.
+max_cognitive_complexity = 4
+# Calling into any of these from a data-model method is an auto-fail (I/O).
+io_import_prefixes = [
+    "beanstalk.services",
+    "logging",
+    "sqlite3",
+    "httpx",
+    "requests",
+]
+
+[tool.archcheck.lcom4]
+# LCOM4 = number of connected components among methods; > 1 means the class
+# is really several classes.
+max_components = 1
+
+[tool.deptry.per_rule_ignores]
+# uvicorn is invoked via CLI (justfile); python-multipart and jinja2 are
+# loaded by FastAPI's form parsing / templating — none is imported directly.
+DEP002 = ["uvicorn", "python-multipart", "jinja2"]

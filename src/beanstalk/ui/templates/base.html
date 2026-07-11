@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Beanstalk review{% endblock %}</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1rem; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid #8884; }
+    .outcome-approved { color: #2e7d32; }
+    .outcome-declined { color: #c62828; }
+    .outcome-needs_review { color: #ef6c00; }
+    form.review { display: flex; gap: 0.5rem; align-items: center; margin: 1rem 0; }
+    input[type="text"] { flex: 1; padding: 0.3rem; }
+  </style>
+</head>
+<body>
+  <header><h1><a href="/" style="text-decoration:none">☕ Beanstalk</a></h1></header>
+  {% block content %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Review queue — Beanstalk{% endblock %}
+{% block content %}
+<h2>Needs review ({{ queue | length }})</h2>
+{% if queue %}
+<table>
+  <tr><th>Cafe</th><th>Equipment</th><th>Payment</th><th>Risk</th><th></th></tr>
+  {% for application, decision in queue %}
+  <tr>
+    <td>{{ application.cafe.name }}</td>
+    <td>{{ application.equipment.description }}</td>
+    <td>${{ decision.monthly_payment }}/mo</td>
+    <td>{{ "%.0f%%" | format(decision.risk_score * 100) }}</td>
+    <td><a href="/applications/{{ application.application_id }}">review →</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>Queue is empty. ✨</p>
+{% endif %}
+
+<h2>All decisions ({{ all_decisions | length }})</h2>
+<table>
+  <tr><th>Cafe</th><th>Outcome</th><th>Summary</th></tr>
+  {% for application, decision in all_decisions %}
+  <tr>
+    <td><a href="/applications/{{ application.application_id }}">{{ application.cafe.name }}</a></td>
+    <td class="outcome-{{ decision.outcome.value }}">{{ decision.outcome.value }}</td>
+    <td>{{ decision.summary() }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
