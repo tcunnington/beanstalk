@@ -13,6 +13,17 @@ api | ui          vertical apps (independent; reach the model only through servi
            └─ utils  tier 1: generic, domain-free helpers (never changing)
 ```
 
+## Where does my change go?
+
+| You're adding… | It belongs in |
+|---|---|
+| a business rule or policy threshold | `domain/` — pure functions (follow `eligibility.py`) |
+| an API endpoint | `api/routes.py` + a schema in `api/schemas.py` |
+| a UI page or form | `ui/` (routes, forms, templates) |
+| orchestration, persistence, config | `services/` |
+| a model feature | `model/features.py`, then retrain: `just train` |
+| a generic, domain-free helper | `utils/` |
+
 ## Golden rules
 
 1. Data models are anemic: derived properties and formatting only. Logic lives in
@@ -26,7 +37,10 @@ api | ui          vertical apps (independent; reach the model only through servi
 5. Prefer functions over classes; a class needs real state (connection, artifact).
    Pass dependencies explicitly through `__init__` — no DI frameworks, no globals.
 6. Stepdown layout: orchestrator on top, `_helpers` directly below their caller.
-7. Every package README states what belongs there — read it before adding files.
+7. Before creating or moving any file: read that package's README. It states what
+   belongs there and what must not.
+8. Run servers through the `.claude/launch.json` preview configs (or `just api` /
+   `just ui` in a terminal) — never ad-hoc background uvicorn.
 
 **Before you're done: `just check` must pass.** Full rationale in
 [docs/design-rules.md](docs/design-rules.md); what enforces each rule in

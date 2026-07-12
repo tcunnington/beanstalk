@@ -40,7 +40,10 @@ def _check_class(
             file=path,
             line=cls.lineno,
             code="ARCH101",
-            message=f"class {cls.name} inherits from {base!r}, which is not on the allow-list",
+            message=(
+                f"class {cls.name} inherits from {base!r}, which is not on the "
+                "allow-list; compose it in, or define a Protocol"
+            ),
         )
         for base in resolved_bases
         if not _is_allowed(base, config)
@@ -52,7 +55,10 @@ def _check_class(
                 file=path,
                 line=cls.lineno,
                 code="ARCH102",
-                message=f"class {cls.name} uses multiple inheritance ({', '.join(resolved_bases)})",
+                message=(
+                    f"class {cls.name} uses multiple inheritance "
+                    f"({', '.join(resolved_bases)}); keep one base and compose the rest"
+                ),
             )
         )
     return violations

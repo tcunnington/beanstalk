@@ -7,6 +7,16 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PYPROJECT_PATH = REPO_ROOT / "pyproject.toml"
 
+# The design-rule each code enforces, cited in every violation so the reader
+# (human or agent) lands on the rationale, not just the symptom.
+RULE_DOCS = {
+    "ARCH101": "docs/design-rules.md 'Composition Over DI Frameworks'",
+    "ARCH102": "docs/design-rules.md 'Composition Over DI Frameworks'",
+    "ARCH201": "docs/design-rules.md 'Anemic Domain Models'",
+    "ARCH202": "docs/design-rules.md 'Anemic Domain Models'",
+    "ARCH301": "docs/design-rules.md 'Prefer Functions Over Classes'",
+}
+
 
 @dataclass(frozen=True)
 class Violation:
@@ -16,7 +26,7 @@ class Violation:
     message: str
 
     def __str__(self) -> str:
-        return f"{self.file}:{self.line} {self.code} {self.message}"
+        return f"{self.file}:{self.line} {self.code} {self.message} [{RULE_DOCS[self.code]}]"
 
 
 @dataclass(frozen=True)
