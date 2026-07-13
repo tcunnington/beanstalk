@@ -3,10 +3,14 @@ from pathlib import Path
 import pytest
 from sklearn.metrics import roc_auc_score
 
-from beanstalk.model.features import FEATURE_COLUMNS, FeatureVector, features_from_application
-from beanstalk.model.predict import ModelArtifactMissingError, RiskModel
-from beanstalk.model.synthetic import generate_training_data
-from beanstalk.model.train import train
+from beanstalk.features.risk_scorer.feature_vector import (
+    FEATURE_COLUMNS,
+    FeatureVector,
+    features_from_application,
+)
+from beanstalk.features.risk_scorer.predict import ModelArtifactMissingError, RiskModel
+from beanstalk.features.risk_scorer.synthetic import generate_training_data
+from beanstalk.features.risk_scorer.train import train
 from tests.unit.builders import healthy_application
 
 

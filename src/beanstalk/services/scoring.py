@@ -1,23 +1,16 @@
-"""Risk scoring: the seam between services and the model product."""
+"""The risk-scoring seam: what coordination needs from the risk_scorer feature.
+
+The protocol is stated purely in Core terms; the feature's entrypoint conforms
+structurally, so services never import the feature's internals — only its
+`entrypoint.load_scorer` at the composition root.
+"""
 
 from typing import Protocol
 
-from beanstalk.domain.application import FinancingApplication
-from beanstalk.model.features import features_from_application
-from beanstalk.model.predict import RiskModel
+from beanstalk.core.application import FinancingApplication
 
 
 class RiskScorer(Protocol):
     """Anything that can put a default-risk number on an application."""
 
     def score(self, application: FinancingApplication) -> float: ...
-
-
-class ModelRiskScorer:
-    """Scores applications with the trained RiskModel artifact."""
-
-    def __init__(self, risk_model: RiskModel) -> None:
-        self._risk_model = risk_model
-
-    def score(self, application: FinancingApplication) -> float:
-        return self._risk_model.predict_default_risk(features_from_application(application))

@@ -6,8 +6,8 @@ Any single failure is grounds for decline.
 
 from decimal import Decimal
 
-from beanstalk.domain.application import FinancingApplication
-from beanstalk.domain.decision import Reason
+from beanstalk.core.application import FinancingApplication
+from beanstalk.core.decision import Reason
 from beanstalk.utils.money import format_usd
 
 MIN_MONTHS_IN_BUSINESS = 6

@@ -1,14 +1,21 @@
-"""ApplicationService: the submit -> score -> decide -> persist workflow."""
+"""ApplicationService: the submit -> score -> decide -> persist workflow.
+
+The coordination tier (tier 4): a thin broker that wires the risk_scorer and
+machine_recommender features to the core decision policy and persistence. It
+reaches each feature only through that feature's entrypoint.
+"""
 
 from dataclasses import replace
 from decimal import Decimal
 
-from beanstalk.domain.application import CafeProfile, EquipmentItem, FinancingApplication
-from beanstalk.domain.decision import Decision, DecisionOutcome, Reason
-from beanstalk.domain.decisioning import decide
-from beanstalk.model.predict import RiskModel
+from beanstalk.core.application import CafeProfile, EquipmentItem, FinancingApplication
+from beanstalk.core.decision import Decision, DecisionOutcome, Reason
+from beanstalk.core.decisioning import decide
+from beanstalk.features.machine_recommender.entrypoint import load_recommender
+from beanstalk.features.risk_scorer.entrypoint import load_scorer
+from beanstalk.services.recommending import Recommender
 from beanstalk.services.repository import DecisionRepository
-from beanstalk.services.scoring import ModelRiskScorer, RiskScorer
+from beanstalk.services.scoring import RiskScorer
 from beanstalk.services.settings import Settings
 from beanstalk.utils.ids import new_id
 
@@ -17,8 +24,11 @@ def build_application_service(settings: Settings | None = None) -> "ApplicationS
     """Composition root: wire the production service graph from settings."""
     settings = settings if settings is not None else Settings()
     repository = DecisionRepository(settings.database_path)
-    scorer = ModelRiskScorer(RiskModel.load(settings.artifact_path))
-    return ApplicationService(repository, scorer, settings)
+    scorer = load_scorer(settings.artifact_path)
+    recommender = load_recommender()
+    return ApplicationService(
+        repository=repository, scorer=scorer, recommender=recommender, settings=settings
+    )
 
 
 class ReviewNotPendingError(Exception):
@@ -29,10 +39,16 @@ class ApplicationService:
     """Coordinates the financing workflow; dependencies are passed explicitly."""
 
     def __init__(
-        self, repository: DecisionRepository, scorer: RiskScorer, settings: Settings
+        self,
+        *,
+        repository: DecisionRepository,
+        scorer: RiskScorer,
+        recommender: Recommender,
+        settings: Settings,
     ) -> None:
         self._repository = repository
         self._scorer = scorer
+        self._recommender = recommender
         self._settings = settings
 
     def submit(
@@ -61,6 +77,15 @@ class ApplicationService:
         )
         self._repository.save(application, decision)
         return decision
+
+    def recommend_machine(self, application_id: str) -> EquipmentItem:
+        """Suggest an espresso machine for a stored applicant's cafe.
+
+        Coordinates two features' worth of state — the persisted application and
+        the machine_recommender — which is exactly the tier-4 broker's job.
+        """
+        application, _decision = self._repository.get(application_id)
+        return self._recommender.recommend(application.cafe)
 
     def get(self, application_id: str) -> tuple[FinancingApplication, Decision]:
         return self._repository.get(application_id)

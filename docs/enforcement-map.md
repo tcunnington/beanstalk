@@ -8,10 +8,11 @@ Legend: 🟢 machine-enforced (fails `just check`) · 🟡 partially enforced ·
 
 | Rule (design-rules.md) | Status | Enforced by |
 |---|---|---|
-| Tier layering: interfaces → services → domain → utils | 🟢 | `layers` import contract |
-| Vertical modules (interfaces.api, interfaces.ui, model) independent | 🟢 | `independence` import contract (+ `ignore_imports` for the services→model seam) |
-| Tiers 1–2 framework/I-O-free (deny-list; pure 3rd-party libs allowed) | 🟢 | `forbidden` import contract |
-| Anemic domain models (no business logic on data objects) | 🟢 | archcheck ARCH201 (cognitive complexity via complexipy) + ARCH202 (no I/O calls) — `tests/arch/test_model_logic.py` |
+| Tier layering: interfaces → services → features → core → utils | 🟢 | `layers` import contract |
+| Interfaces & features (api, ui, risk_scorer, machine_recommender) independent | 🟢 | `independence` import contract (+ `ignore_imports` for the services→features seam) |
+| Features never import each other; reached only via `entrypoint.py` | 🟡 | `independence` contract blocks cross-feature imports; "only the entrypoint" is convention (a candidate custom check) |
+| Tiers 1–2 (utils, core) framework/I-O-free (deny-list; pure 3rd-party libs allowed) | 🟢 | `forbidden` import contract |
+| Anemic data models (no business logic on data objects) | 🟢 | archcheck ARCH201 (cognitive complexity via complexipy) + ARCH202 (no I/O calls) — `tests/arch/test_model_logic.py` |
 | Composition over inheritance | 🟢 | archcheck ARCH101 (base allow-list) + ARCH102 (no multiple inheritance) — `tests/arch/test_no_inheritance.py` |
 | Duck typing / Protocols over ABCs | 🟢 | `abc.ABC` deliberately absent from the ARCH101 allow-list |
 | One responsibility per class (cohesion) | 🟢 | archcheck ARCH301 (LCOM4 = 1) — `tests/arch/test_lcom4.py` |
@@ -59,7 +60,7 @@ repo's taste:
 | The CLAUDE.md → docs funnel; one `just check` gate | **essential** — the agent/context strategy |
 | Pydantic for boundary validation | **house preference, lightly coupled** — the concept is "schema validation at boundaries"; swapping to msgspec/attrs means editing the archcheck allow-list, the `forbidden` deny-list, and the data-model detector in `tests/arch/checkers/model_logic.py` |
 | just (vs make), FastAPI (vs any web framework), uv/ruff/pyright | **preference** — nothing in the design depends on them |
-| sklearn, sqlite | **placeholders** — stand-ins for "an ML stack", "a database"; see model/ and services/ READMEs |
+| sklearn, sqlite | **placeholders** — stand-ins for "an ML stack", "a database"; see features/risk_scorer/ and services/ READMEs |
 
 ## Where each config lives
 

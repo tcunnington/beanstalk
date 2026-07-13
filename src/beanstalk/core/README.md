@@ -1,7 +1,8 @@
-# domain/ — tier 2: domain logic
+# core/ — tier 2: core domain
 
-**Velocity: slowly-changing.** The core business concepts of equipment financing,
-as native types and pure functions. No I/O, no frameworks, no pydantic.
+**Velocity: slowly-changing.** The pure, stable foundation of equipment
+financing: enterprise-wide concepts as native types and pure functions. No I/O,
+no frameworks, no pydantic. These are the truths every feature builds on.
 
 | Module | Provides |
 |---|---|
@@ -12,16 +13,19 @@ as native types and pure functions. No I/O, no frameworks, no pydantic.
 | `decisioning.py` | `decide(application, *, risk_score) -> Decision` — combines everything |
 
 **What belongs here:** data shapes (`@dataclass(frozen=True)`, `Enum`) and the pure
-functions that manipulate them. Rules take domain objects, return domain objects.
+functions that manipulate them — concepts shared across *every* feature. Rules
+take core objects, return core objects.
 
 **What must NOT be here:**
 - business logic on the data objects themselves — models stay **anemic**
   (derived properties and formatting only; enforced by ARCH201/ARCH202)
 - pydantic/sqlite/fastapi/sklearn imports (enforced by the `forbidden` contract)
+- **feature-specific logic** — if only one capability cares about it, it belongs
+  in that feature, not in core
 - orchestration ("first score, then persist") — that's `services/`
 
 **Allowed imports:** `beanstalk.utils`, stdlib, and pure third-party libraries
 (same policy as utils: the `forbidden` import contract bans frameworks and I/O,
 not dependencies).
 
-**Testing:** business rules against domain data, no mocks (`tests/unit/`).
+**Testing:** business rules against core data, no mocks (`tests/unit/`).

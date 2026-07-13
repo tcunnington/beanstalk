@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from beanstalk.domain.eligibility import eligibility_failures
+from beanstalk.core.eligibility import eligibility_failures
 from tests.unit.builders import healthy_application, healthy_cafe
 
 

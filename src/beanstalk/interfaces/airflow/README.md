@@ -25,9 +25,9 @@ nightly_rescore()
 
 Rules, same as every interface:
 
-- imports `services` only — never `model`, never another interface
+- imports `services` only — never a `features/` sandbox, never another interface
 - no business logic in tasks; if a task grows an `if` about the business, that
-  branch belongs in `domain/` and the orchestration of it in `services/`
+  branch belongs in `core/` and the orchestration of it in `services/`
 - scheduling/retry/alerting config is interface concern and belongs here
 
 If this becomes real: add the `airflow` dependency in its own optional group,

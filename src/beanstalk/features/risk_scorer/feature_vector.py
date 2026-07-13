@@ -6,8 +6,8 @@ FEATURE_COLUMNS fixes the column order of the training matrix.
 
 from pydantic import BaseModel, Field
 
-from beanstalk.domain.affordability import monthly_payment_for
-from beanstalk.domain.application import FinancingApplication
+from beanstalk.core.affordability import monthly_payment_for
+from beanstalk.core.application import FinancingApplication
 
 FEATURE_COLUMNS = (
     "months_in_business",

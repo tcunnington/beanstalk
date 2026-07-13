@@ -6,8 +6,8 @@ Tier 1 -> Tier 2 build-up.
 
 from decimal import Decimal
 
-from beanstalk.domain.application import FinancingApplication
-from beanstalk.domain.decision import Reason
+from beanstalk.core.application import FinancingApplication
+from beanstalk.core.decision import Reason
 from beanstalk.utils.finmath import monthly_payment
 
 MAX_PAYMENT_TO_REVENUE = Decimal("0.15")

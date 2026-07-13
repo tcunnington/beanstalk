@@ -13,14 +13,14 @@ changes, independently of each other and of the business.
 - Framework wiring (FastAPI app factories, router registration).
 
 **What must NOT be here**
-- Business logic — that's `domain/`. If an endpoint grows an `if` about the
+- Business logic — that's `core/`. If an endpoint grows an `if` about the
   business, push it down.
 - Orchestration or persistence — that's `services/`.
-- Imports of another interface, or of `beanstalk.model` directly. Interfaces
-  and domain capabilities relate many-to-many *through services* — the same
+- Imports of another interface, or of any `features/` sandbox directly.
+  Interfaces and features relate many-to-many *through services* — the same
   service method backs the API, the UI, and tomorrow's DAG.
 
-**Allowed imports:** `services`, `domain`, `utils`. Enforced by the layers and
+**Allowed imports:** `services`, `core`, `utils`. Enforced by the layers and
 independence import contracts (see [src/beanstalk/README.md](../README.md)).
 
 | Subpackage | Mechanism |

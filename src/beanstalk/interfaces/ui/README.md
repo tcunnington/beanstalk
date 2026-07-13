@@ -15,8 +15,8 @@ touches the service; invalid verdicts → 422, double-reviews → 409, unknown
 ids → 404 (all via narrow `except ... raise ... from`).
 
 **What must NOT be here:** business rules, JSON API endpoints (that's `api/`),
-direct `beanstalk.model` imports (independence contract), imports from `api/`.
+direct imports of any `features/` sandbox (independence contract), imports from `api/`.
 
-**Allowed imports:** `services`, `domain`, `utils`, fastapi/jinja2/pydantic.
+**Allowed imports:** `services`, `core`, `utils`, fastapi/jinja2/pydantic.
 
 **Testing:** `tests/integration/test_ui.py` — submit → queue → resolve flow.

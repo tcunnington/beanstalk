@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from beanstalk.domain.decision import DecisionOutcome
+from beanstalk.core.decision import DecisionOutcome
 from beanstalk.services.applications import ApplicationService
 from tests.integration.conftest import StubScorer
 from tests.unit.builders import espresso_machine, healthy_cafe

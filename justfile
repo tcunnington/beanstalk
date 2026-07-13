@@ -46,7 +46,7 @@ graph:
 
 # Train the risk model and write the artifact
 train:
-    uv run python -m beanstalk.model.train
+    uv run python -m beanstalk.features.risk_scorer.train
 
 # Run the partner-facing API on :8000
 api:

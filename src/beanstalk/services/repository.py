@@ -10,8 +10,8 @@ from pathlib import Path
 
 from pydantic import TypeAdapter
 
-from beanstalk.domain.application import FinancingApplication
-from beanstalk.domain.decision import Decision, DecisionOutcome
+from beanstalk.core.application import FinancingApplication
+from beanstalk.core.decision import Decision, DecisionOutcome
 
 _APPLICATION_ADAPTER = TypeAdapter(FinancingApplication)
 _DECISION_ADAPTER = TypeAdapter(Decision)

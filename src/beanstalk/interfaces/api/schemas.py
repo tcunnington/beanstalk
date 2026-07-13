@@ -8,13 +8,13 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
-from beanstalk.domain.application import (
+from beanstalk.core.application import (
     CafeProfile,
     EquipmentCategory,
     EquipmentItem,
     FinancingApplication,
 )
-from beanstalk.domain.decision import Decision
+from beanstalk.core.decision import Decision
 
 
 class CafePayload(BaseModel):

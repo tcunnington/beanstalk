@@ -1,7 +1,7 @@
 from decimal import Decimal
 
-from beanstalk.domain.decision import DecisionOutcome
-from beanstalk.domain.decisioning import decide
+from beanstalk.core.decision import DecisionOutcome
+from beanstalk.core.decisioning import decide
 from tests.unit.builders import healthy_application, healthy_cafe
 
 

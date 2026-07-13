@@ -1,9 +1,9 @@
 """Combine hard rules, affordability, and the risk score into a Decision."""
 
-from beanstalk.domain.affordability import affordability_failure, monthly_payment_for
-from beanstalk.domain.application import FinancingApplication
-from beanstalk.domain.decision import Decision, DecisionOutcome, Reason
-from beanstalk.domain.eligibility import eligibility_failures
+from beanstalk.core.affordability import affordability_failure, monthly_payment_for
+from beanstalk.core.application import FinancingApplication
+from beanstalk.core.decision import Decision, DecisionOutcome, Reason
+from beanstalk.core.eligibility import eligibility_failures
 
 DEFAULT_APPROVE_RISK_BELOW = 0.25
 DEFAULT_DECLINE_RISK_AT = 0.60

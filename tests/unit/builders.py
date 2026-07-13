@@ -3,7 +3,7 @@
 from decimal import Decimal
 from typing import Any
 
-from beanstalk.domain.application import (
+from beanstalk.core.application import (
     CafeProfile,
     EquipmentCategory,
     EquipmentItem,

@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from beanstalk.domain.affordability import affordability_failure, monthly_payment_for
+from beanstalk.core.affordability import affordability_failure, monthly_payment_for
 from tests.unit.builders import healthy_application, healthy_cafe
 
 

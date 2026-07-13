@@ -5,7 +5,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 
-from beanstalk.model.features import FeatureVector
+from beanstalk.features.risk_scorer.feature_vector import FeatureVector
 
 DEFAULT_ARTIFACT_PATH = Path(__file__).parent / "artifacts" / "default_risk.joblib"
 

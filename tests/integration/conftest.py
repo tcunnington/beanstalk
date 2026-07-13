@@ -5,7 +5,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from beanstalk.domain.application import FinancingApplication
+from beanstalk.core.application import FinancingApplication
+from beanstalk.features.machine_recommender.entrypoint import load_recommender
 from beanstalk.interfaces.api.app import create_app as create_api_app
 from beanstalk.interfaces.ui.app import create_app as create_ui_app
 from beanstalk.services.applications import ApplicationService
@@ -31,7 +32,12 @@ def scorer() -> StubScorer:
 @pytest.fixture
 def service(tmp_path: Path, scorer: StubScorer):
     repository = DecisionRepository(tmp_path / "test.db")
-    yield ApplicationService(repository, scorer, Settings())
+    yield ApplicationService(
+        repository=repository,
+        scorer=scorer,
+        recommender=load_recommender(),
+        settings=Settings(),
+    )
     repository.close()
 
 

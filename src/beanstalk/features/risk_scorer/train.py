@@ -7,8 +7,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from beanstalk.model.predict import DEFAULT_ARTIFACT_PATH
-from beanstalk.model.synthetic import generate_training_data
+from beanstalk.features.risk_scorer.predict import DEFAULT_ARTIFACT_PATH
+from beanstalk.features.risk_scorer.synthetic import generate_training_data
 
 
 def train(
