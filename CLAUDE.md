@@ -9,10 +9,11 @@ through the tiers; any single function's novel contribution stays small and read
 interfaces/       delivery mechanisms: api | ui | (airflow stub) — independent,
    │              thin, reach features only through services
    └─ services    tier 4: coordination/facades; orchestrates features; owns infra
-       │          (DB, settings). Constantly changing.
+       │          (DB, settings) via adapters/. Usually stable.
        └─ features tier 3: sandboxed product capabilities, each behind one
           │        entrypoint.py (risk_scorer | machine_recommender). Never
           │        import each other; free to use any library/layout inside.
+          │        Constantly changing — this is where product work happens.
           └─ core  tier 2: frozen dataclasses + pure functions (slowly changing)
               └─ utils  tier 1: generic, domain-free helpers (never changing)
 ```

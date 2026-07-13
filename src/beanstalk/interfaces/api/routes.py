@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from beanstalk.interfaces.api.schemas import ApplicationDetail, ApplicationRequest, DecisionResponse
 from beanstalk.services.applications import ApplicationService
-from beanstalk.services.repository import ApplicationNotFoundError
+from beanstalk.services.decision_records import ApplicationNotFoundError
 
 
 def create_router(service: ApplicationService) -> APIRouter:

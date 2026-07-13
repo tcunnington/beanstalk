@@ -107,12 +107,19 @@ The organizing idea (docs/design-rules.md, Part 2) is that code is layered by
   combines them with a risk score. Enterprise-wide truths, shared by every
   feature. No I/O, no frameworks. Changes only when the business does.
 - **`features` (tier 3)** are sandboxed product capabilities — `risk_scorer`
-  (the real sklearn model) and `machine_recommender` (a stub). Each is a
-  volatile mini-app that builds on core but is otherwise free to use any library
-  and any internal layout. They never import each other.
+  (the real sklearn model) and `machine_recommender` (a stub). This is where
+  product work actually happens, so it's the **constantly-changing** tier: each
+  is a mini-app that builds on core but is otherwise free to use any library and
+  any internal layout. They never import each other.
 - **`services` (tier 4)** is coordination: a thin broker that loads features,
-  scores, decides, persists. It changes constantly — which is exactly why
-  nothing below it may know it exists. Churn cannot propagate downward.
+  scores, decides, persists. It's **usually stable** — not because it's high in
+  the stack, but *because* it's kept thin. A broker that stays a broker doesn't
+  accumulate the churn its features go through; the moment it starts absorbing
+  product logic, it stops being stable (see "Fat Services" in the red flags).
+
+Layering still does its job regardless of which tier moves fastest: nothing
+below a tier may know it exists, so churn — wherever it concentrates — can't
+propagate downward.
 
 Two things sit *across* the tiers. Delivery mechanisms live under `interfaces/`
 — the partner API, the reviewer UI, and a stub showing where an Airflow DAG or
@@ -146,7 +153,8 @@ Pragmatist"), is authoritative. The load-bearing rules as applied here:
   about the ceiling of what a method on a data model may do.
 - **Functions over classes.** The core layer has zero behavior classes. The
   only classes with behavior hold *real state*: a sqlite connection
-  (`DecisionRepository`), a loaded artifact (`RiskModel`).
+  (`DecisionRecordStore`, wrapping the generic `SqliteAdapter`), a loaded
+  artifact (`RiskModel`).
 - **Protocols, not ABCs.** `RiskScorer` is a `typing.Protocol`; the feature's
   entrypoint conforms structurally, inheriting nothing. `abc.ABC` is
   deliberately banned from the inheritance allow-list.

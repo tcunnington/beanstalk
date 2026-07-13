@@ -20,14 +20,14 @@ concepts change. Each tier may import only from tiers below it.
 ```
 +-------------------------------------------------------+
 |                    TIER 4: SERVICES                   |
-|  - Constantly-changing coordination & facades         |
+|  - Usually stable coordination & facades              |
 |  - Orchestrates features; owns cross-cutting infra    |
 +---------------------------+---------------------------+
                             |
                             v
 +-------------------------------------------------------+
 |                TIER 3: FEATURE SANDBOXES              |
-|  - Volatile, isolated mini-apps (product capabilities)|
+|  - Constantly-changing, isolated mini-apps            |
 |  - Build on core truths; never import each other      |
 +---------------------------+---------------------------+
                             |
@@ -67,7 +67,7 @@ channel.
 * **Testing:** Tested by verifying business rules against core data structures, keeping external dependencies out.
 
 ### Tier 3: Feature Sandboxes (`features`)
-* **Velocity:** *Volatile.*
+* **Velocity:** *Constantly-changing.*
 * **What it is:** Isolated mini-applications, one per product capability (a risk scorer, a recommendation engine). A feature builds on core truths and utilities but is otherwise a sandbox: the team that owns it is free to grow whatever internal structure it needs — its own helpers, its own sub-packages, its own third-party stack (sklearn, torch, an external SDK).
 * **The Rules:**
     * **One Entry Point:** Each feature exposes its capability through a single `entrypoint.py`. Everything else in the feature is private; outside code imports the entrypoint and nothing deeper. The entrypoint speaks in Core vocabulary — it takes and returns core types (or primitives), so the coordination tier can wire features together without knowing their internals.
@@ -76,7 +76,7 @@ channel.
 * **Testing:** Each feature is tested in isolation through its entrypoint, with its own fixtures.
 
 ### Tier 4: Services
-* **Velocity:** *Constantly-changing.*
+* **Velocity:** *Usually stable.*
 * **What it is:** Coordination-oriented services: lightweight facades that manage high-level flow and orchestrate communication *between* features. Services handle the *when* and *why* of our business operations, own the cross-cutting infrastructure that coordination needs (databases, settings, queues), and may pass Core types straight through. A service is the broker, not a fifth feature — if real product logic accumulates here, it wants to move down into a feature or Core.
 * **The Rules:**
     * **Explicit over Implicit State:** Avoid global or singleton states imported across modules. Pass dependencies explicitly through function arguments or constructors, even if it results in longer function signatures. Knowing exactly where state comes from is worth the verbosity.

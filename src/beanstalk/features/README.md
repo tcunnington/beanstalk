@@ -1,6 +1,6 @@
 # features/ — tier 3: feature sandboxes
 
-**Velocity: volatile.** One subpackage per product capability. Each is an
+**Velocity: constantly-changing.** One subpackage per product capability. Each is an
 isolated mini-application — the risk model Beanstalk sells, the equipment
 recommender it upsells with — that builds on core truths but is otherwise free
 to grow whatever it needs.

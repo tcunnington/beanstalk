@@ -10,7 +10,7 @@ from beanstalk.features.machine_recommender.entrypoint import load_recommender
 from beanstalk.interfaces.api.app import create_app as create_api_app
 from beanstalk.interfaces.ui.app import create_app as create_ui_app
 from beanstalk.services.applications import ApplicationService
-from beanstalk.services.repository import DecisionRepository
+from beanstalk.services.decision_records import DecisionRecordStore
 from beanstalk.services.settings import Settings
 
 
@@ -31,14 +31,14 @@ def scorer() -> StubScorer:
 
 @pytest.fixture
 def service(tmp_path: Path, scorer: StubScorer):
-    repository = DecisionRepository(tmp_path / "test.db")
+    records = DecisionRecordStore(tmp_path / "test.db")
     yield ApplicationService(
-        repository=repository,
+        records=records,
         scorer=scorer,
         recommender=load_recommender(),
         settings=Settings(),
     )
-    repository.close()
+    records.close()
 
 
 @pytest.fixture

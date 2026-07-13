@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from beanstalk.interfaces.ui.forms import ReviewForm
 from beanstalk.services.applications import ApplicationService, ReviewNotPendingError
-from beanstalk.services.repository import ApplicationNotFoundError
+from beanstalk.services.decision_records import ApplicationNotFoundError
 
 
 def create_router(service: ApplicationService, templates: Jinja2Templates) -> APIRouter:

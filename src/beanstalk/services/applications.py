@@ -13,8 +13,8 @@ from beanstalk.core.decision import Decision, DecisionOutcome, Reason
 from beanstalk.core.decisioning import decide
 from beanstalk.features.machine_recommender.entrypoint import load_recommender
 from beanstalk.features.risk_scorer.entrypoint import load_scorer
+from beanstalk.services.decision_records import DecisionRecordStore
 from beanstalk.services.recommending import Recommender
-from beanstalk.services.repository import DecisionRepository
 from beanstalk.services.scoring import RiskScorer
 from beanstalk.services.settings import Settings
 from beanstalk.utils.ids import new_id
@@ -23,11 +23,11 @@ from beanstalk.utils.ids import new_id
 def build_application_service(settings: Settings | None = None) -> "ApplicationService":
     """Composition root: wire the production service graph from settings."""
     settings = settings if settings is not None else Settings()
-    repository = DecisionRepository(settings.database_path)
+    records = DecisionRecordStore(settings.database_path)
     scorer = load_scorer(settings.artifact_path)
     recommender = load_recommender()
     return ApplicationService(
-        repository=repository, scorer=scorer, recommender=recommender, settings=settings
+        records=records, scorer=scorer, recommender=recommender, settings=settings
     )
 
 
@@ -41,12 +41,12 @@ class ApplicationService:
     def __init__(
         self,
         *,
-        repository: DecisionRepository,
+        records: DecisionRecordStore,
         scorer: RiskScorer,
         recommender: Recommender,
         settings: Settings,
     ) -> None:
-        self._repository = repository
+        self._records = records
         self._scorer = scorer
         self._recommender = recommender
         self._settings = settings
@@ -75,7 +75,7 @@ class ApplicationService:
             approve_risk_below=self._settings.approve_risk_below,
             decline_risk_at=self._settings.decline_risk_at,
         )
-        self._repository.save(application, decision)
+        self._records.save(application, decision)
         return decision
 
     def recommend_machine(self, application_id: str) -> EquipmentItem:
@@ -84,21 +84,21 @@ class ApplicationService:
         Coordinates two features' worth of state — the persisted application and
         the machine_recommender — which is exactly the tier-4 broker's job.
         """
-        application, _decision = self._repository.get(application_id)
+        application, _decision = self._records.get(application_id)
         return self._recommender.recommend(application.cafe)
 
     def get(self, application_id: str) -> tuple[FinancingApplication, Decision]:
-        return self._repository.get(application_id)
+        return self._records.get(application_id)
 
     def list_all(self) -> list[tuple[FinancingApplication, Decision]]:
-        return self._repository.list_all()
+        return self._records.list_all()
 
     def review_queue(self) -> list[tuple[FinancingApplication, Decision]]:
-        return self._repository.list_by_outcome(DecisionOutcome.NEEDS_REVIEW)
+        return self._records.list_by_outcome(DecisionOutcome.NEEDS_REVIEW)
 
     def resolve_review(self, application_id: str, *, approve: bool, reviewer_note: str) -> Decision:
         """Apply a human reviewer's approve/decline call to a NEEDS_REVIEW decision."""
-        application, decision = self._repository.get(application_id)
+        application, decision = self._records.get(application_id)
         if decision.outcome is not DecisionOutcome.NEEDS_REVIEW:
             raise ReviewNotPendingError(
                 f"Application {application_id!r} is {decision.outcome.value}, not awaiting review."
@@ -108,5 +108,5 @@ class ApplicationService:
             outcome=DecisionOutcome.APPROVED if approve else DecisionOutcome.DECLINED,
             reasons=(*decision.reasons, Reason(code="manual_review", message=reviewer_note)),
         )
-        self._repository.save(application, resolved)
+        self._records.save(application, resolved)
         return resolved

@@ -1,8 +1,8 @@
-"""SQLite persistence for applications and their decisions.
+"""Persists financing applications together with their decisions.
 
-Domain objects are serialized with pydantic TypeAdapters (which understand
-dataclasses, Decimal, and enums) so the domain layer itself stays
-pydantic-free.
+Owns the schema and the (de)serialization of core objects via pydantic
+TypeAdapters (so core itself stays pydantic-free). The generic SQL mechanics
+come from adapters/sqlite.py, kept deliberately business-agnostic.
 """
 
 import sqlite3
@@ -12,10 +12,12 @@ from pydantic import TypeAdapter
 
 from beanstalk.core.application import FinancingApplication
 from beanstalk.core.decision import Decision, DecisionOutcome
+from beanstalk.services.adapters.sqlite import SqliteAdapter
 
 _APPLICATION_ADAPTER = TypeAdapter(FinancingApplication)
 _DECISION_ADAPTER = TypeAdapter(Decision)
 
+_TABLE = "decisions"
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS decisions (
     application_id TEXT PRIMARY KEY,
@@ -31,55 +33,48 @@ class ApplicationNotFoundError(Exception):
     """No stored application matches the requested id."""
 
 
-class DecisionRepository:
-    """Owns the sqlite connection; stores each application with its decision."""
+class DecisionRecordStore:
+    """Persists (FinancingApplication, Decision) pairs, keyed by application_id."""
 
     def __init__(self, database_path: Path | str) -> None:
-        self._connection = sqlite3.connect(database_path, check_same_thread=False)
-        self._connection.row_factory = sqlite3.Row
-        self._connection.execute(_SCHEMA)
-        self._connection.commit()
+        self._sqlite = SqliteAdapter(database_path)
+        self._sqlite.ensure_schema(_SCHEMA)
 
     def save(self, application: FinancingApplication, decision: Decision) -> None:
         """Insert or replace the stored decision for this application."""
-        self._connection.execute(
-            "INSERT OR REPLACE INTO decisions"
-            " (application_id, outcome, application_json, decision_json)"
-            " VALUES (?, ?, ?, ?)",
-            (
-                application.application_id,
-                decision.outcome.value,
-                _APPLICATION_ADAPTER.dump_json(application).decode(),
-                _DECISION_ADAPTER.dump_json(decision).decode(),
-            ),
+        self._sqlite.upsert(
+            _TABLE,
+            {
+                "application_id": application.application_id,
+                "outcome": decision.outcome.value,
+                "application_json": _APPLICATION_ADAPTER.dump_json(application).decode(),
+                "decision_json": _DECISION_ADAPTER.dump_json(decision).decode(),
+            },
         )
-        self._connection.commit()
 
     def get(self, application_id: str) -> tuple[FinancingApplication, Decision]:
-        row = self._connection.execute(
-            "SELECT * FROM decisions WHERE application_id = ?", (application_id,)
-        ).fetchone()
+        row = self._sqlite.find_one(_TABLE, column="application_id", value=application_id)
         if row is None:
             raise ApplicationNotFoundError(f"No application with id {application_id!r}")
         return _from_row(row)
 
     def list_all(self) -> list[tuple[FinancingApplication, Decision]]:
-        rows = self._connection.execute(
-            "SELECT * FROM decisions ORDER BY created_at DESC, application_id"
-        ).fetchall()
+        rows = self._sqlite.find_all(_TABLE, order_by="created_at DESC, application_id")
         return [_from_row(row) for row in rows]
 
     def list_by_outcome(
         self, outcome: DecisionOutcome
     ) -> list[tuple[FinancingApplication, Decision]]:
-        rows = self._connection.execute(
-            "SELECT * FROM decisions WHERE outcome = ? ORDER BY created_at DESC, application_id",
-            (outcome.value,),
-        ).fetchall()
+        rows = self._sqlite.find_where(
+            _TABLE,
+            column="outcome",
+            value=outcome.value,
+            order_by="created_at DESC, application_id",
+        )
         return [_from_row(row) for row in rows]
 
     def close(self) -> None:
-        self._connection.close()
+        self._sqlite.close()
 
 
 def _from_row(row: sqlite3.Row) -> tuple[FinancingApplication, Decision]:
