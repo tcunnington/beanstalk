@@ -53,12 +53,12 @@ decision procedure, not just the tier definitions:
    knows boto3 exists and fails without a network — it flunks. Utils is about
    *knowledge*, not reusability.
 
-**Aside — pure but heavyweight.** Code with no I/O but a large dependency
-(pandas transforms, a numpy-heavy calculation) is genuinely ambiguous. There's
-no universal answer; this repo's answer is "core speaks stdlib only, utils may
-use pure third-party libraries" (see the `forbidden` contract's deny-list).
-Decide your own per-repo vocabulary for what each pure tier may speak, and
-encode it in the deny-list — that's what the contract is *for*.
+**Aside — pure but heavyweight.** A large dependency (pandas, a numpy-heavy
+calculation) does *not* push code out of the pure tiers. The bar for utils and
+core is I/O and frameworks, not dependency weight — a trusted pure library is as
+good as stdlib here, so both tiers may use them freely. What each pure tier may
+speak is a per-repo choice; encode it in the `forbidden` contract's deny-list —
+that's what the import contract is for.
 
 ## Step 2: Decide your verticals
 
@@ -86,11 +86,10 @@ capability from the start, even a stub one; that's cheaper than migrating
 later and it's the fastest way to prove your `independence` contract catches
 real violations.
 
-**The metaphor that keeps this straight:** if this were microservices instead
-of a modular monolith, each **feature** would be a service, and the
-**services tier** would be the pub/sub bus wiring them together. Two features
-that need to cooperate meet at the bus, never in a private back channel — the
-`independence` contract makes that literal, not just aspirational.
+Lean on design-rules.md Part 2's microservice / pub-sub-bus framing to keep
+this straight (each feature a service, the services tier the bus). The one
+thing to add for adoption: that "meet at the bus, never in a back channel"
+rule isn't aspirational — the `independence` contract makes it a build error.
 
 ## Step 3: Infrastructure — adapters and stores, not "repositories"
 
@@ -133,13 +132,12 @@ known debt, with a follow-up ticket to shrink it.
 
 Not everything you enforce has a correct value. See enforcement-map.md's
 **Binary rules vs. dials** section for the full framing; in short — import
-contracts and the inheritance allow-list are binary and can block a
-greenfield build on day one. Complexity/cohesion/size ceilings are dials with
-no correct value, only a current one: start them informational (the
-justfile's `-` prefix pattern), and either tighten by hand or ratchet
-(fail only on regression from a recorded baseline) once you have a real
-distribution to calibrate against. A guessed threshold should never block a
-merge on day one.
+contracts and the inheritance allow-list are binary, but complexity/cohesion/size
+ceilings are dials with no correct value, only a current one. Start every dial as
+a warning, not a build failure (the justfile's `-` prefix: runs, prints, doesn't
+block) — this matters most on an existing codebase, where a fresh dial can light
+up dozens of legacy violations at once. Tighten by hand or ratchet once you have
+a real distribution to calibrate against.
 
 ## Worksheet
 
