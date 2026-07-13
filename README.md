@@ -232,3 +232,4 @@ broken — which is also when an agent with compacted context needs it most.
 | How the checkers work — and their blind spots | [tests/arch/README.md](tests/arch/README.md) |
 | The business, end to end | [core/decisioning.py](src/beanstalk/core/decisioning.py), then [services/applications.py](src/beanstalk/services/applications.py) |
 | A feature sandbox + its entrypoint | [features/README.md](src/beanstalk/features/README.md), then [features/risk_scorer/entrypoint.py](src/beanstalk/features/risk_scorer/entrypoint.py) |
+| How to port this setup to a *different* app | [docs/adopting-this.md](docs/adopting-this.md) |

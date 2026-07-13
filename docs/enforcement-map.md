@@ -16,7 +16,7 @@ Legend: 🟢 machine-enforced (fails `just check`) · 🟡 partially enforced ·
 | Composition over inheritance | 🟢 | archcheck ARCH101 (base allow-list) + ARCH102 (no multiple inheritance) — `tests/arch/test_no_inheritance.py` |
 | Duck typing / Protocols over ABCs | 🟢 | `abc.ABC` deliberately absent from the ARCH101 allow-list |
 | One responsibility per class (cohesion) | 🟢 | archcheck ARCH301 (LCOM4 = 1) — `tests/arch/test_lcom4.py` |
-| Pydantic only at boundaries; native types inside | 🟢 | `forbidden` contract + allow-list (BaseModel allowed, domain can't import it) |
+| Pydantic only at boundaries; native types inside | 🟢 | `forbidden` contract + allow-list (BaseModel allowed, core can't import it) |
 | Max function length / branching | 🟢 | ruff PLR0915 (`max-statements = 60`), PLR0912 |
 | ≤ 2–3 mandatory positional args; keyword-only config | 🟢 | ruff PLR0913 / PLR0917 (`max-positional-args = 3`, `max-args = 6`) |
 | Immutability by default | 🟡 | convention (`frozen=True` everywhere in domain); pyright strict catches mutation of frozen dataclasses |
