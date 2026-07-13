@@ -7,9 +7,9 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
+from beanstalk.interfaces.ui.forms import ReviewForm
 from beanstalk.services.applications import ApplicationService, ReviewNotPendingError
 from beanstalk.services.repository import ApplicationNotFoundError
-from beanstalk.ui.forms import ReviewForm
 
 
 def create_router(service: ApplicationService, templates: Jinja2Templates) -> APIRouter:

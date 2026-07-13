@@ -20,6 +20,8 @@ functions that manipulate them. Rules take domain objects, return domain objects
 - pydantic/sqlite/fastapi/sklearn imports (enforced by the `forbidden` contract)
 - orchestration ("first score, then persist") — that's `services/`
 
-**Allowed imports:** `beanstalk.utils`, stdlib.
+**Allowed imports:** `beanstalk.utils`, stdlib, and pure third-party libraries
+(same policy as utils: the `forbidden` import contract bans frameworks and I/O,
+not dependencies).
 
 **Testing:** business rules against domain data, no mocks (`tests/unit/`).

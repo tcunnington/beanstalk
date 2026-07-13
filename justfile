@@ -40,17 +40,21 @@ test:
 deps:
     uv run deptry src
 
+# Render the import graph to import-graph.html (interactive, self-contained)
+graph:
+    uv run python scripts/import_graph.py
+
 # Train the risk model and write the artifact
 train:
     uv run python -m beanstalk.model.train
 
 # Run the partner-facing API on :8000
 api:
-    uv run uvicorn --factory beanstalk.api.app:create_app --reload --port 8000
+    uv run uvicorn --factory beanstalk.interfaces.api.app:create_app --reload --port 8000
 
 # Run the reviewer UI on :8001
 ui:
-    uv run uvicorn --factory beanstalk.ui.app:create_app --reload --port 8001
+    uv run uvicorn --factory beanstalk.interfaces.ui.app:create_app --reload --port 8001
 
 # Everything CI runs, in order of fail-fast usefulness
 check: lint typecheck typecheck-ty imports test deps

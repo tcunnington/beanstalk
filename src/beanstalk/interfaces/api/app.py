@@ -6,7 +6,7 @@ scorer instead of the production graph.
 
 from fastapi import FastAPI
 
-from beanstalk.api.routes import create_router
+from beanstalk.interfaces.api.routes import create_router
 from beanstalk.services.applications import ApplicationService, build_application_service
 
 

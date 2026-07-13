@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 
-from beanstalk.api.schemas import ApplicationDetail, ApplicationRequest, DecisionResponse
+from beanstalk.interfaces.api.schemas import ApplicationDetail, ApplicationRequest, DecisionResponse
 from beanstalk.services.applications import ApplicationService
 from beanstalk.services.repository import ApplicationNotFoundError
 

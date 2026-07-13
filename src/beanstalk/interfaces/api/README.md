@@ -1,4 +1,4 @@
-# api/ — partner-facing REST API (vertical app)
+# interfaces/api — partner-facing REST API
 
 FastAPI app for equipment vendors and partners: submit financing applications,
 fetch decisions. Runs on :8000 (`just api`).

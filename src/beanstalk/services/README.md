@@ -19,9 +19,15 @@ financing operations. All I/O lives here or above.
 
 **What must NOT be here:** business rules (what makes an application eligible
 belongs in `domain/`), feature engineering (belongs in `model/`), HTTP handling
-(belongs in `api/`/`ui/`).
+(belongs in `interfaces/`).
 
-**Allowed imports:** `model`, `domain`, `utils` — never `api` or `ui`.
+**Allowed imports:** `model`, `domain`, `utils` — never anything under
+`interfaces/`.
+
+sqlite is a **placeholder**, not a design commitment — `DecisionRepository` is
+where any real database would be adapted, and that's the general rule: wrappers
+around infrastructure (databases, queues, blob stores, external APIs) live at
+this tier as adapters, never in `utils/`.
 
 **Testing:** exercised through the API/UI integration tests
 (`tests/integration/`), with a stub scorer standing in for the model.

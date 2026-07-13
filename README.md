@@ -13,18 +13,20 @@ tooling is the point.
 
 ## Architecture
 
-Two orthogonal dimensions, both enforced by [import-linter](https://import-linter.readthedocs.io/):
+Two orthogonal dimensions, both enforced by import contracts
+([import-linter](https://import-linter.readthedocs.io/)):
 
 ```
-        api          ui           ← vertical apps (mutually independent)
-          \         /
-           services               ← tier 3: orchestration, persistence, model loading
-          /    |
-      model    |                  ← the ML core product (reachable only via services)
-          \    |
-           domain                 ← tier 2: frozen dataclasses + pure business rules
-             |
-           utils                  ← tier 1: generic, domain-free helpers
+   interfaces/                    ← delivery mechanisms (mutually independent)
+     api  ui  (airflow stub)
+          \  /
+        services                  ← tier 3: orchestration, persistence, infra adapters
+          /   |
+      model   |                   ← the ML core product (reachable only via services)
+          \   |
+          domain                  ← tier 2: frozen dataclasses + pure business rules
+            |
+          utils                   ← tier 1: generic, domain-free helpers
 ```
 
 Every package has a README stating its purpose, tier, and allowed imports.
@@ -34,7 +36,7 @@ Start at [src/beanstalk/README.md](src/beanstalk/README.md).
 
 | Concern | Tool |
 |---|---|
-| Layered architecture + module independence | import-linter (3 contracts in `pyproject.toml`) |
+| Layered architecture + module independence | 3 import contracts in `pyproject.toml` (import-linter) |
 | No-inheritance rule (allow-list), anemic data models, LCOM4 cohesion | custom AST checkers in [tests/arch/](tests/arch/README.md) |
 | Validation at application boundaries | Pydantic (api schemas, ui forms, model features, settings) |
 | Lint + format (incl. function-size/argument rules) | ruff |
@@ -72,7 +74,7 @@ curl -s localhost:8000/applications -X POST -H 'content-type: application/json' 
 ## Layout
 
 ```
-src/beanstalk/     the app (six packages, one README each)
+src/beanstalk/     the app (tiers + interfaces/, one README per package)
 tests/unit/        pure domain/utils tests (zero mocking)
 tests/integration/ API + UI flows via TestClient
 tests/model/       model sanity (AUC on held-out synthetic data)
@@ -103,12 +105,17 @@ The organizing idea (docs/design-rules.md, Part 2) is that code is layered by
   persist. It changes constantly — which is exactly why nothing below it may
   know it exists. Churn cannot propagate downward.
 
-Crossed with the tiers are the **vertical apps**: `api`, `ui`, and `model`,
-mutually independent. The API doesn't know the UI exists, and neither may
-import the model directly. When the API needs a risk score it goes through
-`services`, which hides the model behind a one-method `RiskScorer` Protocol.
-That single seam is what makes the system testable: integration tests swap in
-a `StubScorer` and never load sklearn.
+Crossed with the tiers are the **vertical modules**. Delivery mechanisms live
+under `interfaces/` — the partner API, the reviewer UI, and a stub showing
+where an Airflow DAG or CLI would go. Interfaces are thin edges: parse input,
+call a service, format output; they relate to business capabilities
+many-to-many *through services*. The `model` package is the other kind of
+vertical: an internal product engine. All verticals are mutually independent —
+the API doesn't know the UI exists, and neither may import the model directly.
+When the API needs a risk score it goes through `services`, which hides the
+model behind a one-method `RiskScorer` Protocol. That single seam is what
+makes the system testable: integration tests swap in a `StubScorer` and never
+load sklearn.
 
 Who wires it all together? `build_application_service()` in
 [services/applications.py](src/beanstalk/services/applications.py) — the
@@ -138,14 +145,21 @@ Pragmatist"), is authoritative. The load-bearing rules as applied here:
   enters: API schemas, UI forms, model features, settings. Inside, everything
   is plain frozen dataclasses — and the import contracts make that mechanical
   fact, not convention.
+- **Purity is about frameworks and I/O, not dependencies.** utils and domain
+  may lean on pure third-party libraries (numpy-grade); what the `forbidden`
+  contract bans is frameworks and anything that touches the world. Wrappers
+  around infrastructure are `services/` adapters, never utils, however generic
+  they look.
 
 ### The machine checks: enforce > document
 
 A rule that a tool enforces needs no prose, no review vigilance, and no space
-in anyone's memory. The three import-linter contracts (in `pyproject.toml`):
+in anyone's memory. The import contracts and arch checkers are the load-bearing
+implementation of the design ethos — everything else is commentary. The three
+import contracts (in `pyproject.toml`):
 
-1. **layers** — the diagram above, literally: `(api | ui) → services → model
-   → domain → utils`. Any upward import fails with the exact chain.
+1. **layers** — the diagram above, literally: `interfaces (api | ui) → services
+   → model → domain → utils`. Any upward import fails with the exact chain.
 2. **independence** — api, ui, model may not import each other. Layering alone
    would still let the API `import beanstalk.model`; this contract forces the
    services seam. (Subtlety: independence counts *transitive* chains too, so

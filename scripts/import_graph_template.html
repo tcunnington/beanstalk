@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Import graph</title>
+<style>
+  :root {
+    --bg: #faf8f4; --panel: #ffffff; --ink: #2b2620; --muted: #7d766c;
+    --line: #e5dfd4; --accent: #b06a1c; --bad: #b34a31;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17140f; --panel: #211d16; --ink: #ece7de; --muted: #9a9287;
+      --line: #373127; --accent: #d99a4e; --bad: #d9785f;
+    }
+  }
+  body {
+    background: var(--bg); color: var(--ink); margin: 0; padding: 24px 28px 44px;
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  header p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+  .layout { display: flex; gap: 16px; align-items: flex-start; }
+  .canvas-wrap {
+    flex: 1 1 auto; min-width: 0; overflow: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  }
+  aside {
+    flex: 0 0 290px; position: sticky; top: 16px; font-size: 13px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+  }
+  aside h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 12px 0 4px; }
+  aside ul { margin: 2px 0; padding: 0; list-style: none; }
+  aside li { padding: 1px 0; font-size: 12.5px; }
+  aside .flagged { color: var(--bad); font-weight: 600; }
+  aside .empty { color: var(--muted); font-style: italic; }
+  .group-label { font-size: 11px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+  .node { cursor: pointer; }
+  .edge { fill: none; }
+  @media (max-width: 880px) { .layout { flex-direction: column; } aside { position: static; width: auto; flex: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Import graph</h1>
+  <p>Module-level imports from <span class="mono">grimp</span> — the graph the import contracts
+  are checked against. Layer order comes from the layers contract. Hover to trace, click to pin.
+  Dashed edges are contract-sanctioned seams (<span class="mono">ignore_imports</span>);
+  red lib names are on the forbidden deny-list.</p>
+</header>
+<div class="layout">
+  <div class="canvas-wrap"><svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <aside id="panel"></aside>
+</div>
+<script>
+const DATA = /*__DATA__*/;
+
+const PALETTE = ["#3b76c4", "#8a56b8", "#b06a1c", "#2e8a67", "#b34a31", "#67707c", "#3f8f8f", "#a0527d"];
+const NODE_W = 150, NODE_H = 26, GAP = 8, PAD = 12, HEAD = 26, GROUP_GAP = 40, LAYER_GAP = 74, PER_ROW = 4;
+
+const pkgColor = {};
+[...new Set(DATA.layers.flat())].forEach((p, i) => pkgColor[p] = PALETTE[i % PALETTE.length]);
+const shortName = (m, pkg) => m === pkg ? "(init)" : m.slice(pkg.length + 1);
+const pkgLabel = p => p.slice(DATA.root.length + 1) || DATA.root;
+
+// ---- layout: one row per layer, groups side by side, nodes wrap at PER_ROW
+const nodes = {}, groups = [];
+let y = 16, maxW = 0;
+for (const layer of DATA.layers) {
+  let x = 16, rowH = 0;
+  for (const pkg of layer) {
+    const members = DATA.groups[pkg] || [];
+    const cols = Math.min(members.length, PER_ROW) || 1;
+    const rows = Math.max(1, Math.ceil(members.length / PER_ROW));
+    const w = PAD * 2 + cols * NODE_W + (cols - 1) * GAP;
+    const h = HEAD + rows * NODE_H + (rows - 1) * GAP + PAD;
+    groups.push({ pkg, x, y, w, h });
+    members.forEach((m, i) => {
+      nodes[m] = {
+        pkg, id: m,
+        x: x + PAD + (i % PER_ROW) * (NODE_W + GAP),
+        y: y + HEAD + Math.floor(i / PER_ROW) * (NODE_H + GAP),
+      };
+    });
+    x += w + GROUP_GAP; rowH = Math.max(rowH, h);
+  }
+  maxW = Math.max(maxW, x - GROUP_GAP + 16);
+  y += rowH + LAYER_GAP;
+}
+const W = maxW, H = y - LAYER_GAP + 20;
+
+const svg = document.getElementById("svg");
+svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+svg.style.minWidth = Math.min(W, 1400) + "px";
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  (parent || svg).appendChild(e);
+  return e;
+};
+
+for (const g of groups) {
+  el("rect", { x: g.x, y: g.y, width: g.w, height: g.h, rx: 10, fill: pkgColor[g.pkg],
+    "fill-opacity": .05, stroke: pkgColor[g.pkg], "stroke-opacity": .35, "stroke-dasharray": "3 4" });
+  el("text", { x: g.x + PAD, y: g.y + 17, class: "group-label", fill: pkgColor[g.pkg] })
+    .textContent = pkgLabel(g.pkg);
+}
+
+const edgeLayer = el("g", {});
+const anchor = (a, b) => {
+  const ax = a.x + NODE_W / 2, ay = a.y + NODE_H / 2, bx = b.x + NODE_W / 2, by = b.y + NODE_H / 2;
+  if (Math.abs(bx - ax) > Math.abs(by - ay)) return [a.x + (bx > ax ? NODE_W : 0), ay];
+  return [ax, a.y + (by > ay ? NODE_H : 0)];
+};
+const tri = (x, y2, ang) => {
+  const s = 6, a1 = ang + 2.6, a2 = ang - 2.6;
+  return `M${x},${y2} L${x + s * Math.cos(a1)},${y2 + s * Math.sin(a1)} L${x + s * Math.cos(a2)},${y2 + s * Math.sin(a2)} Z`;
+};
+const edgeEls = DATA.edges.map(([f, t, seam]) => {
+  const a = nodes[f], b = nodes[t];
+  if (!a || !b) return null;
+  const [x1, y1] = anchor(a, b), [x2, y2] = anchor(b, a);
+  const dx = x2 - x1, dy = y2 - y1, horiz = Math.abs(dx) > Math.abs(dy);
+  const d = horiz
+    ? `M${x1},${y1} C${x1 + dx * .5},${y1} ${x2 - dx * .5},${y2} ${x2},${y2}`
+    : `M${x1},${y1} C${x1},${y1 + dy * .5} ${x2},${y2 - dy * .5} ${x2},${y2}`;
+  const p = el("path", { d, class: "edge", stroke: pkgColor[a.pkg],
+    "stroke-width": seam ? 2.2 : 1.4, ...(seam ? { "stroke-dasharray": "6 4" } : {}) }, edgeLayer);
+  const ah = el("path", { fill: pkgColor[a.pkg], d: tri(x2, y2, horiz ? Math.atan2(0, dx) : Math.atan2(dy, 0)) }, edgeLayer);
+  return { from: f, to: t, intra: a.pkg === b.pkg, els: [p, ah] };
+}).filter(Boolean);
+
+const nodeEls = {};
+for (const id in nodes) {
+  const n = nodes[id];
+  const g = el("g", { class: "node" });
+  el("rect", { x: n.x, y: n.y, width: NODE_W, height: NODE_H, rx: 6,
+    fill: "var(--panel)", stroke: pkgColor[n.pkg], "stroke-width": 1.3 }, g);
+  const t = el("text", { x: n.x + 9, y: n.y + 17, fill: "var(--ink)", "font-size": 12,
+    "font-weight": 600, class: "mono", "pointer-events": "none" }, g);
+  t.textContent = shortName(id, n.pkg);
+  g.addEventListener("mouseenter", () => { if (!pinned) highlight(id); });
+  g.addEventListener("mouseleave", () => { if (!pinned) highlight(null); });
+  g.addEventListener("click", e => { e.stopPropagation(); pinned = pinned === id ? null : id; highlight(pinned); });
+  nodeEls[id] = g;
+}
+svg.addEventListener("click", () => { pinned = null; highlight(null); });
+
+let pinned = null;
+function highlight(id) {
+  const neigh = new Set(id ? [id] : []);
+  if (id) for (const [f, t] of DATA.edges) {
+    if (f === id) neigh.add(t);
+    if (t === id) neigh.add(f);
+  }
+  for (const e of edgeEls) {
+    const rest = e.intra ? .18 : .4;
+    e.els.forEach(x => x.setAttribute("opacity", !id ? rest : (e.from === id || e.to === id ? .95 : .05)));
+  }
+  for (const nid in nodeEls) nodeEls[nid].setAttribute("opacity", !id || neigh.has(nid) ? 1 : .3);
+  panel(id);
+}
+
+function panel(id) {
+  const aside = document.getElementById("panel");
+  if (!id) {
+    aside.innerHTML = `<h2>How to read</h2>
+      <p style="margin:4px 0;font-size:12.5px">Layers top→bottom as the layers contract orders them.
+      Arrows point at the imported module and must always point downward (or sideways within a
+      package). Hover a module to trace it; click to pin.</p>
+      <p style="margin:4px 0;font-size:12.5px;color:var(--muted)">Regenerate after any refactor:
+      <span class="mono">just graph</span></p>`;
+    return;
+  }
+  const li = arr => arr.length ? arr.map(m => `<li class="mono">${m}</li>`).join("") : `<li class="empty">none</li>`;
+  const flagged = new Set(DATA.flagged);
+  const ext = (DATA.externals[id] || []).map(l =>
+    `<li class="mono${flagged.has(l) ? " flagged" : ""}">${l}${flagged.has(l) ? " — deny-listed for pure tiers" : ""}</li>`
+  ).join("") || `<li class="empty">stdlib only</li>`;
+  const imports = DATA.edges.filter(e => e[0] === id).map(e => e[1]);
+  const importedBy = DATA.edges.filter(e => e[1] === id).map(e => e[0]);
+  aside.innerHTML = `<h2 style="margin-top:0">module</h2><div class="mono" style="font-weight:600">${id}</div>
+    <h2>imports (${imports.length})</h2><ul>${li(imports)}</ul>
+    <h2>imported by (${importedBy.length})</h2><ul>${li(importedBy)}</ul>
+    <h2>external deps</h2><ul>${ext}</ul>`;
+}
+highlight(null);
+</script>
+</body>
+</html>

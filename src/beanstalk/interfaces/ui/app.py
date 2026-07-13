@@ -9,8 +9,8 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
 
+from beanstalk.interfaces.ui.routes import create_router
 from beanstalk.services.applications import ApplicationService, build_application_service
-from beanstalk.ui.routes import create_router
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"
 

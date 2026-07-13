@@ -1,4 +1,4 @@
-# ui/ — internal reviewer UI (vertical app)
+# interfaces/ui — internal reviewer UI
 
 Server-rendered (FastAPI + Jinja2) queue for human reviewers to resolve
 NEEDS_REVIEW decisions. Runs on :8001 (`just ui`).

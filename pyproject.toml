@@ -27,6 +27,7 @@ build-backend = "uv_build"
 dev = [
     "complexipy>=6.0.1",
     "deptry>=0.25.1",
+    "grimp>=3.15",
     "httpx>=0.28.1",
     "import-linter>=2.13",
     "pre-commit>=4.6.0",
@@ -81,10 +82,10 @@ root_package = "beanstalk"
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
-name = "Layers: (api | ui) -> services -> model -> domain -> utils"
+name = "Layers: interfaces (api | ui) -> services -> model -> domain -> utils"
 type = "layers"
 layers = [
-    "beanstalk.api | beanstalk.ui",
+    "beanstalk.interfaces.api | beanstalk.interfaces.ui",
     "beanstalk.services",
     "beanstalk.model",
     "beanstalk.domain",
@@ -92,11 +93,11 @@ layers = [
 ]
 
 [[tool.importlinter.contracts]]
-name = "Vertical modules (api, ui, model) are independent"
+name = "Vertical modules (interfaces.api, interfaces.ui, model) are independent"
 type = "independence"
 modules = [
-    "beanstalk.api",
-    "beanstalk.ui",
+    "beanstalk.interfaces.api",
+    "beanstalk.interfaces.ui",
     "beanstalk.model",
 ]
 # Independence also catches transitive chains, and api/ui legitimately reach
@@ -109,6 +110,9 @@ ignore_imports = [
 [[tool.importlinter.contracts]]
 name = "Tiers 1-2 (utils, domain) stay framework-free"
 type = "forbidden"
+# A deny-list, not "no dependencies": pure third-party libs (numpy, toolz,
+# Shapely...) are welcome in the pure tiers. What's banned is frameworks and
+# I/O. Extend this list as such libraries enter the project.
 source_modules = [
     "beanstalk.utils",
     "beanstalk.domain",
@@ -148,6 +152,9 @@ allow_exception_suffix = true
 
 [tool.archcheck.model_logic]
 # Anemic data models: methods beyond derived properties/formatting are flagged.
+# max_cognitive_complexity is a DIAL, not a law — tuned to this repo's size.
+# On a bigger/older codebase, start it loose (or run the check informationally)
+# and ratchet down; unlike the import contracts there is no "right" value.
 max_cognitive_complexity = 4
 # Calling into any of these from a data-model method is an auto-fail (I/O).
 io_import_prefixes = [
@@ -160,7 +167,7 @@ io_import_prefixes = [
 
 [tool.archcheck.lcom4]
 # LCOM4 = number of connected components among methods; > 1 means the class
-# is really several classes.
+# is really several classes. Also a DIAL (see model_logic note above).
 max_components = 1
 
 [tool.deptry.per_rule_ignores]

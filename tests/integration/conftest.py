@@ -5,12 +5,12 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from beanstalk.api.app import create_app as create_api_app
 from beanstalk.domain.application import FinancingApplication
+from beanstalk.interfaces.api.app import create_app as create_api_app
+from beanstalk.interfaces.ui.app import create_app as create_ui_app
 from beanstalk.services.applications import ApplicationService
 from beanstalk.services.repository import DecisionRepository
 from beanstalk.services.settings import Settings
-from beanstalk.ui.app import create_app as create_ui_app
 
 
 class StubScorer:

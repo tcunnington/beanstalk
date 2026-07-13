@@ -18,6 +18,9 @@ domain in the layer stack. Apps reach it *only through services*.
 policy (thresholds live in domain/services — the model only produces a score).
 
 **Allowed imports:** `beanstalk.domain`, `beanstalk.utils`, sklearn/numpy/pydantic.
-Enforced: never imports `services`, `api`, or `ui`.
+Enforced: never imports `services` or anything under `interfaces/`.
+
+sklearn is a **placeholder**, not a design commitment — any inference stack
+(xgboost, torch, an external endpoint) slots in behind `RiskModel` unchanged.
 
 **Testing:** `tests/model/` — AUC above chance on held-out synthetic data.
