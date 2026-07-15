@@ -95,6 +95,8 @@ channel.
 
 ## Part 3: Micro-Architecture & Clean Code Rules
 
+*Much of this section is inspired by and loosely adapted from Robert C. Martin's* Clean Code**
+
 ### 1. Naming & Readability
 * **Reveal Intent Over Snippets:** Names must tell the reader exactly why a variable or function exists (e.g., `days_since_last_backup` instead of `d`).
 * **Name by Domain, Not Implementation:** Name variables and arguments after the business or application concept they represent, not their technical mechanism or data type.
@@ -118,12 +120,10 @@ channel.
 * **Ditch Getters and Setters:** Access attributes directly (`user.email = "..."`). If you eventually need validation logic, seamlessly upgrade it using Python's native `@property` decorator without changing your public API.
 * **Prefer Functions Over Classes:** You do not need to wrap everything in a class. If you are writing pure transformations with no internal state, write standalone Python functions.
 
-### 5. Errors & Resilience (Pythonic Exception Patterns)
-* **Exceptions are for the Unexpected:** Use exceptions exclusively to signal clear problems, breaking issues, or genuinely unexpected states. Do not use them as optional code paths or standard business logic flow control.
-* **Embrace EAFP:** Favor trying an operation and catching the failure over writing long strings of defensive `if/else` checks (Easier to Ask Forgiveness than Permission).
-* **Catch the Narrowest Exception:** Never use a bare `except:`. Avoid catching a generic `Exception` unless you are logging the traceback and instantly re-raising it. Only catch specific errors you explicitly intend to handle right there (e.g., `ValueError`, `KeyError`).
-* **Never Swallow Silently:** Never hide a failure behind an empty `except: pass` block. It blinds both developers and AI tools to real logic errors.
-* **Chain Explicitly:** When wrapping a lower-level error in a domain-specific custom exception, use the `from` keyword to preserve the underlying stack trace for debugging (e.g., `raise DomainError(...) from err`).
+### 5. Errors & Resilience
+* **Exceptions for the Exceptional:** Reserve exceptions for genuinely unexpected failures, not routine business logic — and once you're in that territory, prefer trying the operation and catching the failure (EAFP) over defensive `if/else` checks (LBYL).
+* **Catch Narrow, Never Swallow:** Never use a bare `except:` or catch a generic `Exception` — only catch specific errors you intend to handle (e.g., `ValueError`, `KeyError`). And never hide a failure behind an empty `except: pass`; a caught exception must be logged, handled, or re-raised, never silently discarded.
+* **Chain Explicitly:** When wrapping a lower-level error, use `from` to preserve the underlying stack trace (e.g., `raise DomainError(...) from err`).
 
 ### 6. Documentation & Comments
 * **Docstrings for Interface Context:** While code logic must remain self-explanatory, up-to-date documentation acts as a vital navigation map for teams and AI agents.

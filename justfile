@@ -44,6 +44,10 @@ deps:
 graph:
     uv run python scripts/import_graph.py
 
+# Exercise the partner API by hand; requires `just api` running. See scripts/try_api.py
+try-api *ARGS:
+    uv run python scripts/try_api.py {{ARGS}}
+
 # Train the risk model and write the artifact
 train:
     uv run python -m beanstalk.features.risk_scorer.train

@@ -73,6 +73,12 @@ class DecisionRecordStore:
         )
         return [_from_row(row) for row in rows]
 
+    def delete(self, application_id: str) -> None:
+        """Remove a stored application. Not reachable from any interface by design."""
+        deleted = self._sqlite.delete(_TABLE, column="application_id", value=application_id)
+        if deleted == 0:
+            raise ApplicationNotFoundError(f"No application with id {application_id!r}")
+
     def close(self) -> None:
         self._sqlite.close()
 

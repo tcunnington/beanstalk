@@ -61,5 +61,11 @@ class SqliteAdapter:
             query += f" ORDER BY {order_by}"
         return self._connection.execute(query, (value,)).fetchall()
 
+    def delete(self, table: str, *, column: str, value: Any) -> int:
+        """Delete rows where `column` equals `value`; returns the number removed."""
+        cursor = self._connection.execute(f"DELETE FROM {table} WHERE {column} = ?", (value,))
+        self._connection.commit()
+        return cursor.rowcount
+
     def close(self) -> None:
         self._connection.close()

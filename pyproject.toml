@@ -27,6 +27,7 @@ build-backend = "uv_build"
 dev = [
     "complexipy>=6.0.1",
     "deptry>=0.25.1",
+    "fire>=0.7.1",
     "grimp>=3.15",
     "httpx>=0.28.1",
     "import-linter>=2.13",
