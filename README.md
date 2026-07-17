@@ -1,24 +1,25 @@
 # Beanstalk
 
-## What this is
+## What it is
 
-This is a worked example of how I build software: code organized by how often
-each part changes rather than by technical role, with the rules enforced by
-machines instead of a wiki page nobody rereads. Import contracts, custom AST
-checks, and a battery of architecture tests all fail the build the moment code
-drifts from the shape it's supposed to have. If you want to lift the pattern
-into your own repo instead of just reading about it, there's a mapping guide
-for that: [docs/adopting-this.md](docs/adopting-this.md).
+This is a worked example of how I would ideally build software: code organized in an
+opinionated fashion, according to patterns of architecture and design that I've seen
+work well in over a decade as an engineer and data scientist.
+These patterns are designed to keep code clean, maintainable, scalable, and readable by both humans and AI.
+The app underneath is deliberately unremarkable.
+It exists to give the architecture something real to bite into, and to share the concepts.
 
-The app underneath is deliberately unremarkable. It exists to give the
-architecture something real to hold up, not the other way around.
+Additionally, this repo takes the extra step of implementing automated checks.
+These let machines check their own work as they write code, and fail the build whenever the code drifts from its intended shape.
+
+If you want to lift the pattern into your own repo, there's a mapping guide at [docs/adopting-this.md](docs/adopting-this.md).
 
 ## The toolbox
 
 | Concern | Tool |
 |---|---|
-| Layered architecture + module independence | import-linter — three contracts in `pyproject.toml` |
-| Composition over inheritance, anemic data models, cohesion | custom AST checkers in [tests/arch/](tests/arch/README.md) |
+| Layered architecture + module independence | import-linter — four contracts in `pyproject.toml` |
+| Composition over inheritance, bare records, cohesion | custom AST checkers in [tests/arch/](tests/arch/README.md) |
 | Validation at boundaries | Pydantic (api schemas, ui forms, feature inputs, settings) |
 | Lint + format, including function-size and argument-count limits | ruff |
 | Type checking | pyright (the gate) + [ty](https://github.com/astral-sh/ty) (informational) |
@@ -44,8 +45,14 @@ layering, not so much that the business itself becomes the interesting part.
 
 ## Architecture
 
-Four tiers stacked by velocity of change, plus independent feature sandboxes
-and interfaces — all enforced by import contracts
+Generally, the code is organized to support both horizontal and vertical concerns: first
+by a four-tier structure, and second by independent verticals that each map to
+a single technical function (and often to a single engineering team).
+
+The four tiers are stacked by velocity of change.
+The verticals are the independent feature sandboxes and the interfaces.
+Interfaces are not included in the tiers, because some projects may not have them (a bare API can be absorbed into the service layer).
+These are all enforced by import contracts
 ([import-linter](https://import-linter.readthedocs.io/)):
 
 ```
@@ -65,7 +72,7 @@ and interfaces — all enforced by import contracts
 
 Each tier imports only from below. Every package has a README stating its
 purpose, tier, and allowed imports — start at
-[src/beanstalk/README.md](src/beanstalk/README.md), or run `just graph` to see
+[src/beanstalk/README.md](src/beanstalk/README.md) to explore, or run `just graph` to see
 the real import graph.
 
 ## Getting started
@@ -78,7 +85,7 @@ just api             # partner API on :8000        (POST /applications)
 just ui              # reviewer queue on :8001
 ```
 
-Try it:
+Try hitting the API directly:
 
 ```sh
 curl -s localhost:8000/applications -X POST -H 'content-type: application/json' -d '{
@@ -88,6 +95,11 @@ curl -s localhost:8000/applications -X POST -H 'content-type: application/json' 
                  "description": "Slayer Steam LP, 2 group", "price": "18500"},
   "term_months": 48, "down_payment": "3700"
 }'
+```
+
+Or use the built-in scripts:
+```
+just try-api list_applications
 ```
 
 ## Layout
@@ -105,99 +117,101 @@ docs/              the design guide and its enforcement map
 
 ## Going deeper
 
-Everything above is enough to run the app. Below is the reasoning, if you
-want it.
+Everything above is enough to run the app.
+Below is more detail on the specific design choices made.
 
 ### Layered by velocity of change
 
-I organize code by **how often it changes**, not by its technical role, and
-imports may only point toward the more stable end (`docs/design-rules.md`,
-Part 2):
+I organize code primarily by **how pure it is** and **how often it changes**, and secondarily by product function.
+Practically, this means splitting code so that imports stay simple: first by ensuring imports only point toward more stable code, according to "tiers"; and second by ensuring independence where it matters most.
+There are four tiers of code: the first three go from more pure and slowly changing to more
+domain-specific and quickly changing, while the final tier is essentially a thin facade tying it all together and interfacing with the external world (`docs/design-rules.md`, Part 2):
 
-- **`utils` (tier 1)** is generic and domain-free: `monthly_payment()` would
+- **`utils` (tier 1)** is generic and domain-free: e.g. `monthly_payment()` would
   work at any lender. It essentially never changes, so everything may lean on it.
-- **`core` (tier 2)** is the business itself — frozen dataclasses plus pure
-  functions: eligibility rules, affordability caps, and `decide()`, which
-  combines them with a risk score. Enterprise-wide truths, shared by every
-  feature. No I/O, no frameworks. Changes only when the business does.
-- **`features` (tier 3)** are sandboxed product capabilities — `risk_scorer`
-  (the real sklearn model) and `machine_recommender` (a stub). This is where
+  These are also dead easy to test, having few or no dependencies and being pure functions.
+- **`core` (tier 2)** is the most basic building blocks of the business. These are
+  comprised of immutable (frozen) dataclasses, plus pure functions: eligibility rules,
+  affordability caps, and `decide()`, which combines them with a risk score.
+  These are enterprise-wide truths which may be shared by every feature. No I/O or end-to-end frameworks.
+  Changes only when the business does.
+- **`features` (tier 3)** are vertical product capabilities — `risk_scorer`
+  (a sklearn model) and `machine_recommender` (a stub for another ML model). This is where
   product work actually happens, so it's the **constantly-changing** tier: each
-  is a mini-app that builds on core but is otherwise free to use any library and
-  any internal layout. They never import each other.
+  is a sandbox/mini-app that builds on core but is otherwise free to use any library and
+  any internal layout within reason. They can never import each other and are ideally reached through a single `entrypoint.py`.
 - **`services` (tier 4)** is coordination: a thin broker that loads features,
-  scores, decides, persists. It's **usually stable** — not because it's high in
-  the stack, but *because* it's kept thin. A broker that stays a broker doesn't
-  accumulate the churn its features go through; the moment it starts absorbing
-  product logic, it stops being stable (see "Fat Services" in the red flags).
+  scores, decides, persists. It's **usually stable**, but this is because it's kept *thin*,
+  not because it's high in the stack. A broker that stays a broker doesn't
+  accumulate the churn its features go through — and when it starts absorbing
+  product logic, it stops being stable (see "Fat Services" in the red flags). _A callout_:
+  right now all I/O sits under this tier, in `services/adapters`. This is due
+  to the small scale; in reality, adapters would be used in tier 3 as well.
 
-Layering does its job regardless of which tier moves fastest: nothing below a
-tier may know it exists, so churn — wherever it concentrates — can't
+Layering means nothing below a tier may know it exists, so churn — wherever it concentrates — can't
 propagate downward.
 
-Two things sit *across* the tiers. Delivery mechanisms live under
-`interfaces/` — the partner API, the reviewer UI, and a stub showing where an
-Airflow DAG or CLI would go. Interfaces are thin edges: parse input, call a
-service, format output; they relate to capabilities many-to-many *through
-services*. And each feature is a sandbox reached through a single
-`entrypoint.py`. Everything that must stay independent — api, ui, and the two
-features — is mutually independent: the API doesn't know the UI exists,
-neither may import a feature directly, and `risk_scorer` and
-`machine_recommender` can't reach into each other. When the API needs a risk
-score it goes through `services`, which reaches the feature through a
-one-method `RiskScorer` Protocol stated in core terms. That seam is what
-makes the system testable: integration tests swap in a `StubScorer` and never
-load sklearn.
+**Interfaces**
 
-A useful frame: if these were microservices, each **feature** would be a
-service and the **services tier** would be the message bus wiring them —
-which is why features meet only there, never in a private back channel.
+The delivery mechanisms at `interfaces/` live outside the four tiers by convention.
+These can vary a lot in practice, but here there are three example interfaces: the partner API, the reviewer UI, and a stub showing where an Airflow DAG or CLI would go.
+They relate to capabilities many-to-many *through services*.
+They are mutually independent and cannot interact.
 
-Who wires it all together? `build_application_service()` in
-[services/applications.py](src/beanstalk/services/applications.py) — the
-composition root. Plain constructor calls (settings → records store + feature
-entrypoints → service), no DI framework.
+**Example of unidirectional information flow:**
 
-### The clean-code rules that actually bite
+When the API needs a risk score it goes through `services`, which reaches the feature through a
+one-method `RiskScorer` Protocol stated in core terms.
+The service uses `features.risk_scorer.entrypoint` to get a scorer, and the feature uses whatever it needs from `core` and `utils`.
+Plus, that makes the system testable: integration tests swap in a `StubScorer` and never load sklearn.
 
-[docs/design-rules.md](docs/design-rules.md) ("The Layered Pragmatist") is
-the source of truth, loosely adapted from Robert C. Martin's *Clean Code*. A
-few of its rules show up constantly in this codebase.
+**What if a feature needs to rely on another feature?**
 
-Data models stay anemic — dataclasses carry data, logic lives in core
+A useful metaphor to consider: if these were microservices, each *feature* would be a
+"service" and the *services tier* would be the message bus wiring them (and is why features
+only ever meet there). What would you do in this paradigm?
+
+**What wires it all together?**
+
+`build_application_service()` in [services/applications.py](src/beanstalk/services/applications.py) does —
+it's the composition root. A simple class interface with composition (settings → records store + feature
+entrypoints → service).
+
+### Design nitty gritty and clean-code rules
+
+[docs/design-rules.md](docs/design-rules.md) ("Naos") is
+the source of truth. It contains a mildly novel architecture & design guide in Part 2,
+and a Part 3 loosely adapted from my memory of Robert C. Martin's *Clean Code*.
+Below are the most important rules, which I'll admit come from a dedication to Python in this repo, and a general dislike of the over-application of OOP principles.
+
+* Data models are plain dataclasses, while logic lives in core
 functions or services. `Decision.summary()`, one line of formatting, is about
-as far as a method on a data model is allowed to go.
+as far as a method on a data model is allowed to go. Keeping data and behavior
+apart like this is normal in functional programming.
 
-The core layer has no behavior classes at all. The only classes that hold
-behavior own real state: a sqlite connection (`DecisionRecordStore`, wrapping
-the generic `SqliteAdapter`), a loaded model artifact (`RiskModel`).
+* Functions/modules are preferred over classes. The core layer has no behavior classes at all.
+The only classes that hold behavior own real state: a sqlite connection (`DecisionRecordStore`,
+a wrapper over the generic `SqliteAdapter`), a loaded model artifact (`RiskModel`).
 
-`RiskScorer` is a `typing.Protocol`, not a base class — the feature's
+* Protocols over abstract classes. `RiskScorer` is a `typing.Protocol`, not a base class — the feature's
 entrypoint conforms to it structurally, inheriting nothing. `abc.ABC` is
 deliberately left off the inheritance allow-list.
 
-A declined application isn't an error, it's a normal outcome, so it comes
-back as a value (`Decision`, with reasons) rather than an exception.
-Exceptions are for the genuinely unexpected — `ApplicationNotFoundError`
-becomes a 404, caught narrowly, chained with `raise ... from`.
+* Pydantic shows up at the boundaries where we need contracts: API schemas, UI forms, feature
+inputs, settings. Inside core it's plain frozen dataclasses. Feature sandboxes are exempt:
+inside a sandbox, anything goes. This is pragmatic, since these sandboxes can easily be bigger than
+the rest of the repo and take the full attention of a team.
 
-Pydantic only shows up at the boundaries: API schemas, UI forms, feature
-inputs, settings. Inside core it's plain frozen dataclasses, and that's not a
-convention I have to remember — the import contracts make it a build failure
-to violate. Feature sandboxes are exempt; inside a sandbox, anything goes.
-
-Purity, to me, is about frameworks and I/O, not dependency count — utils and
-core lean on pure third-party libraries like numpy freely. What the
-`forbidden` contract actually bans is frameworks and anything that touches
-the outside world. Infrastructure wrappers live in `services/adapters`,
-never in `utils`, no matter how generic they look.
+* Purity is about frameworks and I/O, not dependency count. For instance, utils and
+core lean on stdlib and pure third-party libraries like numpy — while anything
+that touches the outside world is structurally `forbidden`.
 
 ### Enforcement over documentation
 
-A rule a tool enforces doesn't need prose, review vigilance, or a place in
-anyone's memory. That's the whole strategy here — the import contracts and
-arch checkers are the load-bearing part of the design; everything else is
-commentary. The three import contracts (in `pyproject.toml`):
+A rule a tool enforces doesn't need prose, review vigilance, or reliance on
+anyone's memory. The strategy here: the import-linter contracts and
+arch checkers strictly protect the design. Everything else is commentary.
+The four import contracts (in `pyproject.toml`):
 
 1. **layers** — the diagram above, literally: `interfaces (api | ui) →
    services → features → core → utils`. Any upward import fails with the
@@ -212,6 +226,10 @@ commentary. The three import contracts (in `pyproject.toml`):
 3. **forbidden** — utils and core may not import pydantic, fastapi, sklearn,
    sqlite3… Tier purity, mechanically. (Features are exempt — they're
    sandboxes.)
+4. **protected** — the inverse of forbidden: `sqlite3` may be imported *only*
+   by `services.adapters`. Rather than naming who can't touch the database,
+   it names the one place that can, so "I/O gets wrapped in an adapter" and
+   "adapters live in services" become a single rule. (Features exempt again.)
 
 Beyond imports, three custom AST checkers run as pytest
 ([tests/arch/](tests/arch/README.md)): **ARCH101/102** (inheritance

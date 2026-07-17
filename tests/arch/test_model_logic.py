@@ -7,7 +7,7 @@ from tests.arch.conftest import CONFIG, FIXTURES_DIR, SOURCE_FILES, source_file_
 
 
 @pytest.mark.parametrize("path", SOURCE_FILES, ids=source_file_id)
-def test_data_models_in_source_stay_anemic(path: Path):
+def test_data_models_in_source_stay_bare(path: Path):
     violations = check_file(path, CONFIG.model_logic)
     assert not violations, "\n" + "\n".join(str(v) for v in violations)
 

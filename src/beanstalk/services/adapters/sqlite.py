@@ -18,6 +18,9 @@ class SqliteAdapter:
     Table and column names are interpolated into SQL directly — safe here only
     because callers always pass literal strings from their own source, never
     user input. Values always go through parameterized placeholders.
+
+    Rows come back as plain dicts: sqlite3's own types never cross this
+    boundary, so callers stay uncoupled from the driver.
     """
 
     def __init__(self, database_path: Path | str) -> None:
@@ -39,27 +42,28 @@ class SqliteAdapter:
         )
         self._connection.commit()
 
-    def find_one(self, table: str, *, column: str, value: Any) -> sqlite3.Row | None:
+    def find_one(self, table: str, *, column: str, value: Any) -> dict[str, Any] | None:
         """The first row where `column` equals `value`, or None."""
-        return self._connection.execute(
+        row = self._connection.execute(
             f"SELECT * FROM {table} WHERE {column} = ?", (value,)
         ).fetchone()
+        return dict(row) if row is not None else None
 
-    def find_all(self, table: str, *, order_by: str | None = None) -> list[sqlite3.Row]:
+    def find_all(self, table: str, *, order_by: str | None = None) -> list[dict[str, Any]]:
         """Every row in `table`, optionally ordered."""
         query = f"SELECT * FROM {table}"
         if order_by:
             query += f" ORDER BY {order_by}"
-        return self._connection.execute(query).fetchall()
+        return [dict(row) for row in self._connection.execute(query).fetchall()]
 
     def find_where(
         self, table: str, *, column: str, value: Any, order_by: str | None = None
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Every row where `column` equals `value`, optionally ordered."""
         query = f"SELECT * FROM {table} WHERE {column} = ?"
         if order_by:
             query += f" ORDER BY {order_by}"
-        return self._connection.execute(query, (value,)).fetchall()
+        return [dict(row) for row in self._connection.execute(query, (value,)).fetchall()]
 
     def delete(self, table: str, *, column: str, value: Any) -> int:
         """Delete rows where `column` equals `value`; returns the number removed."""

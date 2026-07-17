@@ -17,7 +17,7 @@ functions that manipulate them — concepts shared across *every* feature. Rules
 take core objects, return core objects.
 
 **What must NOT be here:**
-- business logic on the data objects themselves — models stay **anemic**
+- business logic on the data objects themselves — models stay **bare records**
   (derived properties and formatting only; enforced by ARCH201/ARCH202)
 - pydantic/sqlite/fastapi/sklearn imports (enforced by the `forbidden` contract)
 - **feature-specific logic** — if only one capability cares about it, it belongs

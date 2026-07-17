@@ -1,4 +1,4 @@
-"""Checker: data-model classes must stay anemic (docs/design-rules.md Part 2).
+"""Checker: data-model classes must stay bare records (docs/design-rules.md Part 2).
 
 ARCH201 — a method's cognitive complexity (via complexipy) exceeds the
           threshold; derived properties and formatting stay trivially simple.

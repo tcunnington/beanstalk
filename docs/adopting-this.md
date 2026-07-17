@@ -115,7 +115,7 @@ business-named wrapper on top, both living in `services/`, never in `utils/`.
 Wire the contracts **before** writing the first line of business code:
 
 1. Create the empty packages for your tiers (Step 1) and verticals (Step 2).
-2. Write the three import contracts against those empty packages — they pass
+2. Write the import contracts against those empty packages — they pass
    trivially with zero code. This is the point: from the very first import
    onward, every line is written under enforcement, not retrofitted.
 3. Vendor the AST checkers (Step 0); point `source_root` at your tree.
@@ -138,6 +138,18 @@ a warning, not a build failure (the justfile's `-` prefix: runs, prints, doesn't
 block) — this matters most on an existing codebase, where a fresh dial can light
 up dozens of legacy violations at once. Tighten by hand or ratchet once you have
 a real distribution to calibrate against.
+
+## Step 6: Put the contracts file under CODEOWNERS
+
+These patterns only reach full strength with a disciplined owner on the file
+that holds them. `pyproject.toml` carries both the contracts and the dependency
+list, and that pairing is the leverage: deptry won't let a library be imported
+until it's declared there, so a new I/O dependency can't arrive without landing
+a diff inches from the deny-list that should govern it. Put the file under
+CODEOWNERS with leads as the owners, and that diff draws the one question no
+machine can ask — "why did `httpx` just move into the general dependency list?"
+Skip it and the deny-lists go stale quietly, which is the one failure mode the
+contracts can't catch for themselves.
 
 ## Worksheet
 

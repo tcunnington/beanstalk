@@ -21,7 +21,7 @@ delivery mechanism — HTTP APIs, server-rendered UIs, and stubs for the kinds a
 larger app grows (Airflow DAGs, CLIs, workers); interfaces are thin: parse
 input, call a service, format output.
 
-The three import contracts:
+The four import contracts:
 
 1. **layers** — `interfaces (api | ui) → services → features → core → utils`; a
    lower tier never imports a higher one. Within a tier, `api | ui` and
@@ -34,5 +34,9 @@ The three import contracts:
    fastapi, sklearn, sqlite3, httpx are deny-listed). Pure third-party libraries
    are fine — the rule is purity, not zero dependencies. Feature sandboxes are
    exempt; they may use anything.
+4. **protected** — `sqlite3` is importable *only* from `services/adapters/`.
+   The inverse of forbidden: it names the one place allowed to touch the
+   driver, so I/O must be wrapped in an adapter and adapters must live in
+   `services/`. Sandboxes are exempt here too.
 
 Rationale: [docs/design-rules.md](../../docs/design-rules.md), Part 2.
