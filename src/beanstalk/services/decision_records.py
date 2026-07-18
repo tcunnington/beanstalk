@@ -5,8 +5,9 @@ TypeAdapters (so core itself stays pydantic-free). The generic SQL mechanics
 come from adapters/sqlite.py, kept deliberately business-agnostic.
 """
 
-import sqlite3
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from pydantic import TypeAdapter
 
@@ -83,7 +84,7 @@ class DecisionRecordStore:
         self._sqlite.close()
 
 
-def _from_row(row: sqlite3.Row) -> tuple[FinancingApplication, Decision]:
+def _from_row(row: Mapping[str, Any]) -> tuple[FinancingApplication, Decision]:
     application = _APPLICATION_ADAPTER.validate_json(row["application_json"])
     decision = _DECISION_ADAPTER.validate_json(row["decision_json"])
     return application, decision

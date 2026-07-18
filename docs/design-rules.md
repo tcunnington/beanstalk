@@ -1,6 +1,8 @@
-# The Layered Pragmatist: Python Software Design & Clean Code Guide
+# Naos: My Personal Python Software Design & Clean Code Guide
 
-> **The Creed:** Optimize for low cognitive overhead. Code should build up complexity linearly, ensuring that the novel contribution of any single function remains minimal, highly readable, and easily testable.
+A velocity-layered Python architecture, after the Greek temple: a load-bearing base, independent columns, and a tie-beam on top — all striving for excellence (aretē).
+
+> **The Creed:** Optimize for low cognitive overhead. As a system grows in size, complexity must be managed by ensuring that any single unit—be it a function, a module, or a tier—doesn't carry more responsibility than a reader can hold in their head at once.
 
 ---
 
@@ -9,13 +11,16 @@
 * **Pragmatism Over Purity:** We do not write abstract code for hypothetical futures. Use the simplest tool that adequately solves today's problem.
 * **Low Cognitive Overhead:** Code must be optimized for readability and maintainability. If a junior engineer cannot understand the flow of data within a few minutes, the abstraction is failing.
 * **Multi-Paradigm Python:** Python is not Java. Mix procedural, functional, and object-oriented styles where they naturally fit. Favor functions and modules over classes unless state management or clear developer UX requires an object.
+* **Enforcement Over Exhortation:** Architectural rules should be enforced by a machine as much as possible. Tools keep everyone honest, no matter how busy they are. They protect the architecture's goals in ways cultural norms and best practices cannot.
 
 ---
 
 ## Part 2: The Four-Tier Architecture (The Velocity of Change)
 
-We organize behavior into four layers based on how frequently the underlying
-concepts change. Each tier may import only from tiers below it.
+A take on the modular monolith — for small-to-monolithic repos, designed to preserve sanity. Here's how to think if it in terms of existing architectures: picture a 4-layer Onion, dependencies pointing inward. The bottom three layers are also Pace layers, ordered by rate of change: the bottom two pure and functional-procedural, the top one made of Vertical Slices. The fourth layer opts out of Pace — a deliberately-stable services facade of coordinators + Ports & Adapters.
+
+Plainly: organize behavior into three layers based on how frequently the underlying
+concepts change--plus a services layer on top. Each tier may import only from tiers below it.
 
 ```
 +-------------------------------------------------------+
@@ -61,14 +66,14 @@ channel.
 * **Velocity:** *Slowly-changing.*
 * **What it is:** The pure, stable foundation: enterprise-wide data shapes (using `@dataclass` or `Enum`) and the pure functions that manipulate them. Core holds the truths shared across *every* feature, and it never leaks feature-specific logic — if a concept only one capability cares about is creeping in, it belongs in that feature, not here.
 * **The Rules:**
-    * **Anemic Domain Models:** Keep business logic outside of data objects. Methods on data objects must be strictly limited to local transformations, derived properties, or formatting (e.g., `__str__`, `.to_json()`). Complex workflows belong in the pure functions of Core or in the Service layer.
+    * **Records and Functions:** Core data are plain records — `@dataclass`, `Enum` — carrying data and nothing more. The logic that would live inside a class goes into bare functions over those records instead. Methods stay limited to local transformations, derived properties, or formatting (`__str__`, `.to_json()`); workflows live in Core's functions or in Services.
     * **Immutability by Default:** Favor immutable data structures (`@dataclass(frozen=True)`) to prevent side effects. If a function mutates an incoming object, it must be the explicit, singular purpose of that function. Unintended mutations are PR-blocking smells.
     * **Scope:** Logic here is tightly restricted in scope. It defines *how* we manipulate core data. If a module in this layer starts importing from numerous other core modules without producing a singular, shared abstraction, it is likely leaking into a Feature or a Service.
 * **Testing:** Tested by verifying business rules against core data structures, keeping external dependencies out.
 
 ### Tier 3: Feature Sandboxes (`features`)
 * **Velocity:** *Constantly-changing.*
-* **What it is:** Isolated mini-applications, one per product capability (a risk scorer, a recommendation engine). A feature builds on core truths and utilities but is otherwise a sandbox: the team that owns it is free to grow whatever internal structure it needs — its own helpers, its own sub-packages, its own third-party stack (sklearn, torch, an external SDK).
+* **What it is:** Isolated mini-applications, one per product capability (e.g. a risk scorer, a recommendation engine, etc). A feature builds on core truths and utilities but is otherwise a sandbox: the team that owns it is free to grow whatever internal structure it needs — its own helpers, its own sub-packages, domain-rich models, its own third-party stack (sklearn, torch, an external SDK).
 * **The Rules:**
     * **One Entry Point:** Each feature exposes its capability through a single `entrypoint.py`. Everything else in the feature is private; outside code imports the entrypoint and nothing deeper. The entrypoint speaks in Core vocabulary — it takes and returns core types (or primitives), so the coordination tier can wire features together without knowing their internals.
     * **No Cross-Feature Imports:** Features never import each other. Two capabilities that need to cooperate do so *through the service tier*, never by reaching into a sibling's internals. (Enforced: the `independence` contract.)

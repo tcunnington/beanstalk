@@ -12,7 +12,8 @@ Legend: 🟢 machine-enforced (fails `just check`) · 🟡 partially enforced ·
 | Interfaces & features (api, ui, risk_scorer, machine_recommender) independent | 🟢 | `independence` import contract (+ `ignore_imports` for the services→features seam) |
 | Features never import each other; reached only via `entrypoint.py` | 🟡 | `independence` contract blocks cross-feature imports; "only the entrypoint" is convention (a candidate custom check) |
 | Tiers 1–2 (utils, core) framework/I-O-free (deny-list; pure 3rd-party libs allowed) | 🟢 | `forbidden` import contract |
-| Anemic data models (no business logic on data objects) | 🟢 | archcheck ARCH201 (cognitive complexity via complexipy) + ARCH202 (no I/O calls) — `tests/arch/test_model_logic.py` |
+| I/O wrapped in an adapter; adapters live in `services/` | 🟢 | `protected` import contract — only `services.adapters` may import `sqlite3` (sandboxes exempt). A new I/O library can't arrive quietly: deptry DEP001 fails the build until it's declared in `pyproject.toml` — the same file this deny-list lives in, so the two land in one diff. Whether the wrapper is a *good* abstraction stays review-only |
+| Bare records (no business logic on data objects) | 🟢 | archcheck ARCH201 (cognitive complexity via complexipy) + ARCH202 (no I/O calls) — `tests/arch/test_model_logic.py` |
 | Composition over inheritance | 🟢 | archcheck ARCH101 (base allow-list) + ARCH102 (no multiple inheritance) — `tests/arch/test_no_inheritance.py` |
 | Duck typing / Protocols over ABCs | 🟢 | `abc.ABC` deliberately absent from the ARCH101 allow-list |
 | One responsibility per class (cohesion) | 🟢 | archcheck ARCH301 (LCOM4 = 1) — `tests/arch/test_lcom4.py` |
@@ -24,12 +25,10 @@ Legend: 🟢 machine-enforced (fails `just check`) · 🟡 partially enforced ·
 | Never swallow silently | 🟡 | ruff SIM105 and B-series catch some forms |
 | Chain exceptions with `from` | 🟢 | ruff B904 |
 | Kill dead code / commented-out blocks | 🟡 | ruff ERA not enabled (noisy); review-only by default |
-| Exceptions are not control flow (declines are values) | ⚪ | design: `Decision` with reasons is the return type; review-only |
 | Explicit over implicit state; composition over DI frameworks | ⚪ | design: app factories + constructor args; review-only |
-| No premature design patterns / hypothetical abstraction | ⚪ | review-only |
 | Service-to-service chains | ⚪ | review-only (import-linter can't see call graphs) |
 | Naming: intent, by domain, snake_case/CamelCase | 🟡 | ruff N-series not enabled; conventions review-only |
-| Stepdown rule; `_helper` below caller; avoid nesting | ⚪ | review-only |
+| Stepdown (newspaper) rule; `_helper` functions below caller | ⚪ | review-only |
 | Google-style docstrings on public modules | ⚪ | ruff D-series not enabled (noisy for a toy repo); review-only |
 | Boy Scout rule | ⚪ | review-only |
 

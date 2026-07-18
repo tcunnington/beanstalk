@@ -1,4 +1,4 @@
-"""Known-good fixture: anemic data models with only derived/formatting methods."""
+"""Known-good fixture: bare-record data models with only derived/formatting methods."""
 
 from dataclasses import dataclass
 from decimal import Decimal

@@ -36,7 +36,7 @@ design ethos — everything else in this file is commentary on them.
 
 ## Golden rules
 
-1. Data models are anemic: derived properties and formatting only. Logic lives in
+1. Data models are bare records: derived properties and formatting only. Logic lives in
    core functions or services. (Enforced: ARCH201/ARCH202.)
 2. Composition over inheritance. Inherit only from the allow-list in
    `[tool.archcheck]`; never multiple bases; Protocols, not ABCs. (ARCH101/102.)

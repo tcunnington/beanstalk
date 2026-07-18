@@ -1,6 +1,6 @@
 """Core data shapes for a financing application.
 
-These are anemic by design: methods are limited to derived properties.
+These are bare records by design: methods are limited to derived properties.
 Business rules live in eligibility.py / affordability.py / decisioning.py.
 """
 

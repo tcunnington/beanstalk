@@ -129,6 +129,27 @@ forbidden_modules = [
     "httpx",
 ]
 
+[[tool.importlinter.contracts]]
+name = "I/O libraries are reachable only through services.adapters"
+type = "protected"
+# The inverse of a forbidden contract: rather than naming who may NOT touch an
+# I/O library, name the one place that may. Every DB/HTTP/socket dependency
+# lives behind an adapter — so this single rule is both "I/O must be wrapped"
+# and "adapters live in services". Add a library the moment something new does
+# real I/O (httpx, psycopg, boto3, smtplib...).
+# Unlike forbidden, this contract only accepts modules actually present in the
+# graph, so it can name a library only once something imports it — hence sqlite3
+# alone here, while forbidden also guards httpx ahead of first use.
+# The sqlite3 overlap with forbidden is deliberate: the two state different
+# intents, and neither should have to imply the other.
+protected_modules = [
+    "sqlite3",
+]
+allowed_importers = [
+    "beanstalk.services.adapters",
+    "beanstalk.features",  # sandboxes are open by design; we don't dictate their internals
+]
+
 # ---------------------------------------------------------------------------
 # archcheck: config for the custom AST checkers in tests/arch/checkers.
 # ---------------------------------------------------------------------------
@@ -154,7 +175,7 @@ allowed_bases = [
 allow_exception_suffix = true
 
 [tool.archcheck.model_logic]
-# Anemic data models: methods beyond derived properties/formatting are flagged.
+# Bare records: methods beyond derived properties/formatting are flagged.
 # max_cognitive_complexity is a DIAL, not a law — tuned to this repo's size.
 # On a bigger/older codebase, start it loose (or run the check informationally)
 # and ratchet down; unlike the import contracts there is no "right" value.

@@ -12,8 +12,8 @@ PYPROJECT_PATH = REPO_ROOT / "pyproject.toml"
 RULE_DOCS = {
     "ARCH101": "docs/design-rules.md 'Composition Over DI Frameworks'",
     "ARCH102": "docs/design-rules.md 'Composition Over DI Frameworks'",
-    "ARCH201": "docs/design-rules.md 'Anemic Domain Models'",
-    "ARCH202": "docs/design-rules.md 'Anemic Domain Models'",
+    "ARCH201": "docs/design-rules.md 'Records and Functions'",
+    "ARCH202": "docs/design-rules.md 'Records and Functions'",
     "ARCH301": "docs/design-rules.md 'Prefer Functions Over Classes'",
 }
 
