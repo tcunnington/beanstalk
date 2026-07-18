@@ -56,18 +56,16 @@ These are all enforced by import contracts
 ([import-linter](https://import-linter.readthedocs.io/)):
 
 ```
-   interfaces/                       ← delivery mechanisms (mutually independent)
-     api  ui  (airflow stub)
-          \  /
-        services                     ← tier 4: coordination/facades; owns infra
+      api  ui  (airflow stub)        ← the external facade (interfaces/): mutually independent
+          \ | /                        delivery mechanisms
+        services (+ adapters)        ← tier 4 (services/): coordination/facades; owns infra
           /   \
-   features/   \                     ← tier 3: sandboxed capabilities, each behind
-  risk_scorer   \                      one entrypoint.py; never import each other
-  machine_recommender
-          \     |
-           core                      ← tier 2: frozen dataclasses + pure rules
+  risk_scorer  \                     ← tier 3 (features/): indep. sandboxed capabilities sitting
+         \    machine_recommender      behind one entrypoint; never import each other
+          \    /
+           core                      ← tier 2 (core/): immutable records + pure rules
              |
-           utils                     ← tier 1: generic, domain-free helpers
+           utils                     ← tier 1 (utils/): generic, domain-free helpers
 ```
 
 Each tier imports only from below. Every package has a README stating its

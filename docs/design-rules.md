@@ -17,8 +17,10 @@ A velocity-layered Python architecture, after the Greek temple: a load-bearing b
 
 ## Part 2: The Four-Tier Architecture (The Velocity of Change)
 
-We organize behavior into four layers based on how frequently the underlying
-concepts change. Each tier may import only from tiers below it.
+A take on the modular monolith — for small-to-monolithic repos, designed to preserve sanity. Here's how to think if it in terms of existing architectures: picture a 4-layer Onion, dependencies pointing inward. The bottom three layers are also Pace layers, ordered by rate of change: the bottom two pure and functional-procedural, the top one made of Vertical Slices. The fourth layer opts out of Pace — a deliberately-stable services facade of coordinators + Ports & Adapters.
+
+Plainly: organize behavior into three layers based on how frequently the underlying
+concepts change--plus a services layer on top. Each tier may import only from tiers below it.
 
 ```
 +-------------------------------------------------------+
